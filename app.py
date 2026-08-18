@@ -522,6 +522,88 @@ def sync_to_disk():
     }
     save_db_data(db)
 
+
+def render_student_management_panel():
+    st.subheader("👥 Student Account Management")
+
+    students = [u for u, data in st.session_state.users.items() if data.get("role") == "Student"]
+
+    if not students:
+        st.info("No student accounts are registered yet.")
+        return
+
+    selected_student = st.selectbox("Select student to manage:", students, key="student_manage_select")
+    student_data = st.session_state.users[selected_student]
+
+    st.markdown("##### 📝 Edit Student Profile")
+    with st.form(f"student_edit_form_{selected_student}"):
+        new_name = st.text_input("Student Name", value=student_data.get("name", ""))
+        new_email = st.text_input("Email", value=student_data.get("email", ""))
+        new_password = st.text_input("Password", type="password", value=student_data.get("password", ""))
+        reset_scores = st.checkbox("Reset all scores and attempts for this student", value=False)
+
+        submitted = st.form_submit_button("💾 Save Student Changes")
+        if submitted:
+            st.session_state.users[selected_student]["name"] = new_name.strip() or student_data.get("name", "")
+            st.session_state.users[selected_student]["email"] = new_email.strip() or student_data.get("email", "")
+            st.session_state.users[selected_student]["password"] = new_password.strip() or student_data.get("password", "")
+
+            if reset_scores:
+                st.session_state.student_scores[selected_student] = {}
+
+            sync_to_disk()
+            st.success(f"Updated student record for {selected_student}.")
+
+    st.markdown("---")
+    st.markdown("##### 🧪 Modify Student Attempts")
+    scores = st.session_state.student_scores.get(selected_student, {})
+
+    if not scores:
+        st.info(f"{student_data.get('name', selected_student)} has no saved attempts yet.")
+    else:
+        question_to_edit = st.selectbox(
+            "Choose question attempt to modify:",
+            list(scores.keys()),
+            key=f"edit_score_question_{selected_student}",
+        )
+        current_result = scores.get(question_to_edit, {})
+
+        with st.form(f"score_update_form_{selected_student}_{question_to_edit}"):
+            status_options = ["Passed", "Failed", "Not Attempted"]
+            current_status = current_result.get("status", "Failed")
+            new_status = st.selectbox(
+                "Status",
+                status_options,
+                index=status_options.index(current_status) if current_status in status_options else 1,
+            )
+            new_score = st.number_input(
+                "Score",
+                min_value=0,
+                step=1,
+                value=int(current_result.get("score", 0)),
+            )
+
+            if st.form_submit_button("Update Attempt"):
+                st.session_state.student_scores[selected_student][question_to_edit] = {
+                    "status": new_status,
+                    "score": int(new_score),
+                }
+                sync_to_disk()
+                st.success(f"Updated attempt for {question_to_edit}.")
+
+    st.markdown("---")
+    st.markdown("##### 🗑 Delete Student Record")
+    confirm_delete = st.checkbox("I confirm I want to delete this student account", value=False, key=f"confirm_delete_{selected_student}")
+    if st.button("Delete Student", key=f"delete_student_{selected_student}", type="secondary"):
+        if confirm_delete:
+            del st.session_state.users[selected_student]
+            st.session_state.student_scores.pop(selected_student, None)
+            sync_to_disk()
+            st.warning(f"Deleted student account: {selected_student}")
+            st.rerun()
+        else:
+            st.warning("Please confirm deletion before removing the student.")
+
 # Initialize Session State
 db_data = load_db()
 
@@ -1021,8 +1103,8 @@ else:
     if current_user["role"] == "Professor":
         st.title("👑 Professor Control & Analytics Panel")
 
-        tab1, tab2, tab3, tab4 = st.tabs(
-            ["📈 Analytics Dashboard", "📊 Student Gradebook", "🏆 Class Leaderboard", "➕ Add New Question"]
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(
+            ["📈 Analytics Dashboard", "📊 Student Gradebook", "🏆 Class Leaderboard", "➕ Add New Question", "👥 Student Management"]
         )
 
         with tab1:
@@ -1166,6 +1248,9 @@ else:
                     }
                     sync_to_disk()
                     st.success(f"Added '{q_title}' successfully!")
+
+        with tab5:
+            render_student_management_panel()
 
     # -------------------------------------------------------------
     # ROLE B: STUDENT PORTAL
