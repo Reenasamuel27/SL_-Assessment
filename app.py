@@ -8,6 +8,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from supabase import create_client
 
 # ==========================================
 # PAGE CONFIGURATION
@@ -16,7 +17,10 @@ st.set_page_config(
     page_title="B.Tech ML Coding Portal", layout="wide", page_icon="⚡"
 )
 
-DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db.json")
+SUPABASE_URL = st.secrets["SUPABASE_URL"].removesuffix("/rest/v1/").rstrip("/")
+SUPABASE_SERVICE_ROLE_KEY = st.secrets["SUPABASE_SERVICE_ROLE_KEY"]
+supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+APP_STATE_ID = "main"
 
 # ==========================================
 # 1. DATABASE SAVE & LOAD HELPERS
@@ -484,43 +488,32 @@ DEFAULT_USERS = {
 ADMIN_ROLES = {"Professor", "Industrial Trainer"}
 
 def load_db():
-    if not os.path.exists(DB_FILE):
-        data = {
-            "users": DEFAULT_USERS,
-            "student_scores": {},
-            "questions": DEFAULT_QUESTIONS,
-        }
-        save_db_data(data)
-        return data
+    response = (
+        supabase.table("app_state")
+        .select("data")
+        .eq("id", APP_STATE_ID)
+        .execute()
+    )
 
-    try:
-        with open(DB_FILE, "r") as f:
-            data = json.load(f)
-            if "users" not in data:
-                data["users"] = DEFAULT_USERS
-            if "student_scores" not in data:
-                data["student_scores"] = {}
-            if "questions" not in data:
-                data["questions"] = DEFAULT_QUESTIONS
-            return data
-    except Exception:
+    if response.data:
+        data = response.data[0]["data"]
+    else:
         data = {
             "users": DEFAULT_USERS,
             "student_scores": {},
             "questions": DEFAULT_QUESTIONS,
         }
         save_db_data(data)
-        return data
+
+    data.setdefault("users", DEFAULT_USERS)
+    data.setdefault("student_scores", {})
+    data.setdefault("questions", DEFAULT_QUESTIONS)
+    return data
 
 def save_db_data(data):
-    directory = os.path.dirname(DB_FILE) or "."
-    with tempfile.NamedTemporaryFile(
-        mode="w", encoding="utf-8", dir=directory, delete=False
-    ) as temporary_file:
-        json.dump(data, temporary_file, indent=4)
-        temporary_file.write("\n")
-        temporary_path = temporary_file.name
-    os.replace(temporary_path, DB_FILE)
+    supabase.table("app_state").upsert(
+        {"id": APP_STATE_ID, "data": data}
+    ).execute()
 
 def sync_to_disk():
     db = {
@@ -919,7 +912,10 @@ def render_login_screen():
                         st.error("⚠️ All fields marked with * are mandatory!")
                     elif "@" not in new_email:
                         st.error("⚠️ Please enter a valid Email Address!")
-                    elif new_username in st.session_state.users:
+                    elif any(
+                        stored_username.casefold() == new_username.casefold()
+                        for stored_username in st.session_state.users
+                    ):
                         st.error("⚠️ Username already taken! Please choose another.")
                     else:
                         st.session_state.users[new_username] = {
@@ -931,6 +927,7 @@ def render_login_screen():
                         st.session_state.student_scores[new_username] = {}
                         sync_to_disk()
                         st.success("🎉 Account created successfully! Switch to 'Sign In' to log in.")
+                        st.rerun()
 
 # Dynamic CSS injection for inner application theme when logged in
 # Dynamic CSS injection for inner application theme when logged in
