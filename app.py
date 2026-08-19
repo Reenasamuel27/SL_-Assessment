@@ -2,6 +2,7 @@ import io
 import json
 import os
 import sys
+import tempfile
 import traceback
 import pandas as pd
 import plotly.express as px
@@ -15,7 +16,7 @@ st.set_page_config(
     page_title="B.Tech ML Coding Portal", layout="wide", page_icon="⚡"
 )
 
-DB_FILE = "db.json"
+DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db.json")
 
 # ==========================================
 # 1. DATABASE SAVE & LOAD HELPERS
@@ -511,8 +512,14 @@ def load_db():
         return data
 
 def save_db_data(data):
-    with open(DB_FILE, "w") as f:
-        json.dump(data, f, indent=4)
+    directory = os.path.dirname(DB_FILE) or "."
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", dir=directory, delete=False
+    ) as temporary_file:
+        json.dump(data, temporary_file, indent=4)
+        temporary_file.write("\n")
+        temporary_path = temporary_file.name
+    os.replace(temporary_path, DB_FILE)
 
 def sync_to_disk():
     db = {
@@ -604,17 +611,12 @@ def render_student_management_panel():
         else:
             st.warning("Please confirm deletion before removing the student.")
 
-# Initialize Session State
+# Initialize and refresh database-backed session state. Streamlit reruns the
+# script for every interaction, so this keeps each session in sync with disk.
 db_data = load_db()
-
-if "users" not in st.session_state:
-    st.session_state.users = db_data["users"]
-
-if "student_scores" not in st.session_state:
-    st.session_state.student_scores = db_data["student_scores"]
-
-if "questions" not in st.session_state:
-    st.session_state.questions = db_data["questions"]
+st.session_state.users = db_data["users"]
+st.session_state.student_scores = db_data["student_scores"]
+st.session_state.questions = db_data["questions"]
 
 if "authenticated_user" not in st.session_state:
     st.session_state.authenticated_user = None
