@@ -1,10 +1,10 @@
 {
     "users": {
-        "prof_admin": {
-            "password": "admin123",
-            "role": "Professor",
-            "name": "Prof.admin",
-            "email": "rjay121274@gmail.com"
+        "Reena_Samuel": {
+            "password": "Jenisam@7200.",
+            "role": "Industrial Trainer",
+            "name": "Trainer",
+            "email": "jenisam98896@gmail.com"
         },
         "rjay": {
             "password": "Rjay@121274",
@@ -18,7 +18,7 @@
             "name": "Reena",
             "email": "jenisam98896@gmail.com"
         },
-        "Reena_Samuel": {
+        "Reena_samuel": {
             "password": "Jenisam",
             "role": "Student",
             "name": "Reena Samuel",

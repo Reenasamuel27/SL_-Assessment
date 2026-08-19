@@ -481,6 +481,7 @@ DEFAULT_USERS = {
         "email": "prof@institution.edu",
     }
 }
+ADMIN_ROLES = {"Professor", "Industrial Trainer"}
 
 def load_db():
     if not os.path.exists(DB_FILE):
@@ -887,11 +888,19 @@ def render_login_screen():
                 submitted = st.form_submit_button("Sign In", type="primary", use_container_width=True)
 
                 if submitted:
+                    matched_username = next(
+                        (
+                            stored_username
+                            for stored_username in st.session_state.users
+                            if stored_username.casefold() == username.casefold()
+                        ),
+                        None,
+                    )
                     if (
-                        username in st.session_state.users
-                        and st.session_state.users[username]["password"] == password
+                        matched_username is not None
+                        and st.session_state.users[matched_username].get("password") == password
                     ):
-                        st.session_state.authenticated_user = username
+                        st.session_state.authenticated_user = matched_username
                         st.success("Login successful!")
                         st.rerun()
                     else:
@@ -1102,7 +1111,7 @@ else:
     # -------------------------------------------------------------
     # ROLE A: PROFESSOR ADMIN PANEL
     # -------------------------------------------------------------
-    if current_user["role"] == "Professor":
+    if current_user.get("role") in ADMIN_ROLES:
         st.title("👑 Professor Control & Analytics Panel")
 
         tab1, tab2, tab3, tab4, tab5 = st.tabs(
