@@ -478,14 +478,27 @@ QUIZ_QUESTIONS = [
 ]
 
 DEFAULT_USERS = {
-    "prof_admin": {
-        "password": "admin123",
-        "role": "Professor",
-        "name": "Prof. Sadaiyandi",
-        "email": "prof@institution.edu",
+    "Reena_Samuel": {
+        "password": "Jenisam@7200.",
+        "role": "Industrial Trainer",
+        "name": "Trainer",
+        "email": "jenisam98896@gamil.com",
     }
 }
 ADMIN_ROLES = {"Professor", "Industrial Trainer"}
+
+
+def _mapping_or_default(value, default):
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            parsed = None
+        if isinstance(parsed, dict):
+            return parsed
+    return default
 
 def load_db():
     response = (
@@ -496,7 +509,7 @@ def load_db():
     )
 
     if response.data:
-        data = response.data[0]["data"]
+        data = _mapping_or_default(response.data[0].get("data"), {})
     else:
         data = {
             "users": DEFAULT_USERS,
@@ -505,9 +518,25 @@ def load_db():
         }
         save_db_data(data)
 
-    data.setdefault("users", DEFAULT_USERS)
-    data.setdefault("student_scores", {})
-    data.setdefault("questions", DEFAULT_QUESTIONS)
+    data["users"] = _mapping_or_default(data.get("users"), DEFAULT_USERS)
+    data["student_scores"] = _mapping_or_default(data.get("student_scores"), {})
+    data["questions"] = _mapping_or_default(data.get("questions"), DEFAULT_QUESTIONS)
+
+    # Keep code-defined default accounts up to date in the persisted state.
+    defaults_changed = False
+    for username, default_details in DEFAULT_USERS.items():
+        if username in data["users"]:
+            updated_details = {**data["users"][username], **default_details}
+            if updated_details != data["users"][username]:
+                data["users"][username] = updated_details
+                defaults_changed = True
+
+    if defaults_changed:
+        save_db_data(data)
+
+    for username in data["users"]:
+        data["student_scores"].setdefault(username, {})
+
     return data
 
 def save_db_data(data):
@@ -935,16 +964,40 @@ def apply_inner_app_theme():
     st.markdown(
         """
         <style>
-            /* Main Dark Background */
-            .stApp {
-                background-color: #0d1117;
-                color: #f0f6fc;
+            :root {
+                --app-bg: #0d1117;
+                --sidebar-bg: #161b22;
+                --panel-bg: #161b22;
+                --panel-soft: #21262d;
+                --text-color: #f0f6fc;
+                --muted-color: #8b949e;
+                --primary-accent: #58a6ff;
+                --border-color: #30363d;
+                --leaderboard-text: #f0f6fc;
             }
-            
-            /* Sidebar Styling */
+
+            @media (prefers-color-scheme: light) {
+                :root {
+                    --app-bg: #f4f9ff;
+                    --sidebar-bg: #edf5ff;
+                    --panel-bg: #ffffff;
+                    --panel-soft: #eef5ff;
+                    --text-color: #0f172a;
+                    --muted-color: #475569;
+                    --primary-accent: #0f6bdb;
+                    --border-color: #d4e4ff;
+                    --leaderboard-text: #0f172a;
+                }
+            }
+
+            .stApp {
+                background-color: var(--app-bg);
+                color: var(--text-color);
+            }
+
             [data-testid="stSidebar"] {
-                background-color: #161b22 !important;
-                border-right: 1px solid #30363d !important;
+                background-color: var(--sidebar-bg) !important;
+                border-right: 1px solid var(--border-color) !important;
             }
             [data-testid="stSidebar"] *, 
             [data-testid="stSidebar"] label, 
@@ -954,73 +1007,72 @@ def apply_inner_app_theme():
             [data-testid="stSidebar"] h1,
             [data-testid="stSidebar"] h2,
             [data-testid="stSidebar"] h3 {
-                color: #f0f6fc !important;
+                color: var(--text-color) !important;
             }
 
-            /* --- FIX 1: RADIO BUTTON TEXT VISIBILITY --- */
             [data-testid="stRadio"] label, 
             [data-testid="stRadio"] p, 
             [data-testid="stRadio"] span,
-            div[role="radiogroup"] label p {
-                color: #f0f6fc !important;
+            div[role="radiogroup"] label p,
+            .stSelectbox label,
+            .stTextInput label,
+            .stTextArea label,
+            .stNumberInput label,
+            .stCheckbox label {
+                color: var(--text-color) !important;
                 font-weight: 500 !important;
             }
 
-            /* --- FIX 2: SELECTBOX / DROPDOWN CONTRAST --- */
             div[data-baseweb="select"] > div {
-                background-color: #21262d !important;
-                border: 1px solid #30363d !important;
+                background-color: var(--panel-soft) !important;
+                border: 1px solid var(--border-color) !important;
                 border-radius: 8px !important;
             }
             div[data-baseweb="select"] * {
-                color: #f0f6fc !important;
+                color: var(--text-color) !important;
             }
             div[data-baseweb="select"] svg {
-                fill: #f0f6fc !important;
+                fill: var(--text-color) !important;
             }
-            /* Dropdown popup menu items */
             ul[role="listbox"] {
-                background-color: #161b22 !important;
-                border: 1px solid #30363d !important;
+                background-color: var(--panel-bg) !important;
+                border: 1px solid var(--border-color) !important;
             }
             li[role="option"] {
-                color: #f0f6fc !important;
-                background-color: #161b22 !important;
+                color: var(--text-color) !important;
+                background-color: var(--panel-bg) !important;
             }
             li[role="option"]:hover, li[aria-selected="true"] {
                 background-color: #1f6beb !important;
                 color: #ffffff !important;
             }
 
-            /* Sidebar buttons */
             [data-testid="stSidebar"] button {
-                background-color: #21262d !important;
-                color: #f0f6fc !important;
-                border: 1px solid #30363d !important;
+                background-color: var(--panel-soft) !important;
+                color: var(--text-color) !important;
+                border: 1px solid var(--border-color) !important;
                 border-radius: 6px !important;
             }
             [data-testid="stSidebar"] button:hover {
-                background-color: #30363d !important;
-                border-color: #8b949e !important;
+                background-color: var(--border-color) !important;
             }
 
-            /* Cards & Podium Styling */
             .metric-card {
-                background: #161b22;
-                border: 1px solid #30363d;
+                background: var(--panel-bg);
+                border: 1px solid var(--border-color);
                 border-radius: 12px;
                 padding: 20px;
                 text-align: center;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+                box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
                 transition: transform 0.2s ease, border-color 0.2s ease;
             }
             .metric-card:hover {
                 transform: translateY(-3px);
-                border-color: #58a6ff;
+                border-color: var(--primary-accent);
             }
             .metric-title {
                 font-size: 0.85rem;
-                color: #8b949e !important;
+                color: var(--muted-color) !important;
                 font-weight: 700;
                 text-transform: uppercase;
                 letter-spacing: 0.05em;
@@ -1028,7 +1080,7 @@ def apply_inner_app_theme():
             .metric-value {
                 font-size: 2.2rem;
                 font-weight: 800;
-                color: #58a6ff !important;
+                color: var(--primary-accent) !important;
             }
             @keyframes pulseGlow {
                 0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); }
@@ -1036,29 +1088,32 @@ def apply_inner_app_theme():
                 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); }
             }
             .podium-1 {
-                background: linear-gradient(145deg, #1f1a00, #161b22);
+                background: linear-gradient(145deg, #1f1a00, var(--panel-bg));
                 border: 2px solid #ffd700;
                 border-radius: 16px;
                 padding: 20px;
                 text-align: center;
                 animation: pulseGlow 2.5s infinite;
+                color: var(--leaderboard-text);
             }
             .podium-2 {
-                background: linear-gradient(145deg, #1a1d24, #161b22);
+                background: linear-gradient(145deg, #1a1d24, var(--panel-bg));
                 border: 2px solid #c0c0c0;
                 border-radius: 16px;
                 padding: 20px;
                 text-align: center;
+                color: var(--leaderboard-text);
             }
             .podium-3 {
-                background: linear-gradient(145deg, #24160c, #161b22);
+                background: linear-gradient(145deg, #24160c, var(--panel-bg));
                 border: 2px solid #cd7f32;
                 border-radius: 16px;
                 padding: 20px;
                 text-align: center;
+                color: var(--leaderboard-text);
             }
             .game-card {
-                background: #161b22;
+                background: var(--panel-bg);
                 border: 2px solid #a371f7;
                 border-radius: 16px;
                 padding: 24px;
@@ -1070,9 +1125,9 @@ def apply_inner_app_theme():
             .stTabs [data-baseweb="tab"] {
                 border-radius: 8px;
                 padding: 10px 18px;
-                background-color: #21262d;
-                color: #c9d1d9 !important;
-                border: 1px solid #30363d;
+                background-color: var(--panel-soft);
+                color: var(--text-color) !important;
+                border: 1px solid var(--border-color);
             }
             .stTabs [aria-selected="true"] {
                 background-color: #1f6beb !important;
@@ -1084,7 +1139,6 @@ def apply_inner_app_theme():
         """,
         unsafe_allow_html=True,
     )
-
 # ==========================================
 # 4. MAIN ENTRYPOINT
 # ==========================================
@@ -1209,8 +1263,10 @@ else:
                 scores = st.session_state.student_scores.get(student, {})
 
                 for q_title, q_info in st.session_state.questions.items():
-                    status = scores.get(q_title, {}).get("status", "Not Attempted")
-                    s_data[q_title] = status
+                    attempt = scores.get(q_title, {})
+                    status = attempt.get("status", "Not Attempted")
+                    score = attempt.get("score", 0) if status != "Not Attempted" else "-"
+                    s_data[q_title] = f"{status} ({score} pts)"
                     if status == "Passed":
                         s_data["Total Score"] += q_info.get("points", 10)
                         s_data["Solved Count"] += 1
