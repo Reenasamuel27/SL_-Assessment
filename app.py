@@ -1,9 +1,12 @@
 import io
+import hashlib
+import hmac
 import json
 import os
 import sys
 import tempfile
 import traceback
+from datetime import datetime, timezone
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -17,10 +20,30 @@ st.set_page_config(
     page_title="B.Tech ML Coding Portal", layout="wide", page_icon="⚡"
 )
 
-SUPABASE_URL = st.secrets["SUPABASE_URL"].removesuffix("/rest/v1/").rstrip("/")
-SUPABASE_SERVICE_ROLE_KEY = st.secrets["SUPABASE_SERVICE_ROLE_KEY"]
-supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+try:
+    SUPABASE_URL = st.secrets["SUPABASE_URL"].removesuffix("/rest/v1/").rstrip("/")
+    SUPABASE_SERVICE_ROLE_KEY = st.secrets["SUPABASE_SERVICE_ROLE_KEY"]
+    supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+except Exception:
+    SUPABASE_URL = ""
+    SUPABASE_SERVICE_ROLE_KEY = "local-development-key"
+    supabase = None
 APP_STATE_ID = "main"
+AUTH_SIGNING_KEY = SUPABASE_SERVICE_ROLE_KEY.encode("utf-8")
+LOCAL_DB_PATH = os.path.join(os.path.dirname(__file__), "db.json")
+
+def _auth_token(username):
+    signature = hmac.new(AUTH_SIGNING_KEY, username.encode("utf-8"), hashlib.sha256).hexdigest()
+    return f"{username}:{signature}"
+
+def _restore_authenticated_user(users):
+    token = st.query_params.get("auth")
+    if not token or ":" not in token:
+        return None
+    username, signature = token.rsplit(":", 1)
+    if username in users and hmac.compare_digest(signature, _auth_token(username).rsplit(":", 1)[1]):
+        return username
+    return None
 
 # ==========================================
 # 1. DATABASE SAVE & LOAD HELPERS
@@ -486,6 +509,7 @@ DEFAULT_USERS = {
     }
 }
 ADMIN_ROLES = {"Professor", "Industrial Trainer"}
+UNIT_NAMES = ["Unit 1", "Unit 2", "Unit 3", "Unit 4", "Unit 5"]
 
 
 def _mapping_or_default(value, default):
@@ -500,17 +524,29 @@ def _mapping_or_default(value, default):
             return parsed
     return default
 
-def load_db():
-    response = (
-        supabase.table("app_state")
-        .select("data")
-        .eq("id", APP_STATE_ID)
-        .execute()
-    )
+def _list_or_default(value, default):
+    return value if isinstance(value, list) else default
 
-    if response.data:
-        data = _mapping_or_default(response.data[0].get("data"), {})
+def _question_unit(question, index):
+    return question.get("unit") or UNIT_NAMES[index % len(UNIT_NAMES)]
+
+def load_db():
+    if supabase is None:
+        try:
+            with open(LOCAL_DB_PATH, "r", encoding="utf-8") as db_file:
+                data = json.load(db_file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            data = {}
     else:
+        response = (
+            supabase.table("app_state")
+            .select("data")
+            .eq("id", APP_STATE_ID)
+            .execute()
+        )
+        data = _mapping_or_default(response.data[0].get("data"), {}) if response.data else {}
+
+    if not data:
         data = {
             "users": DEFAULT_USERS,
             "student_scores": {},
@@ -521,6 +557,10 @@ def load_db():
     data["users"] = _mapping_or_default(data.get("users"), DEFAULT_USERS)
     data["student_scores"] = _mapping_or_default(data.get("student_scores"), {})
     data["questions"] = _mapping_or_default(data.get("questions"), DEFAULT_QUESTIONS)
+    data["quiz_attempts"] = _mapping_or_default(data.get("quiz_attempts"), {})
+    data["quiz_completed"] = _mapping_or_default(data.get("quiz_completed"), {})
+    data["assignments"] = _mapping_or_default(data.get("assignments"), {})
+    data["quiz_questions"] = _list_or_default(data.get("quiz_questions"), QUIZ_QUESTIONS.copy())
 
     # Keep code-defined default accounts up to date in the persisted state.
     defaults_changed = False
@@ -537,9 +577,21 @@ def load_db():
     for username in data["users"]:
         data["student_scores"].setdefault(username, {})
 
+    units_changed = False
+    for index, question in enumerate(data["questions"].values()):
+        if "unit" not in question:
+            question["unit"] = _question_unit(question, index)
+            units_changed = True
+    if units_changed:
+        save_db_data(data)
+
     return data
 
 def save_db_data(data):
+    if supabase is None:
+        with open(LOCAL_DB_PATH, "w", encoding="utf-8") as db_file:
+            json.dump(data, db_file, indent=2)
+        return
     supabase.table("app_state").upsert(
         {"id": APP_STATE_ID, "data": data}
     ).execute()
@@ -549,6 +601,10 @@ def sync_to_disk():
         "users": st.session_state.users,
         "student_scores": st.session_state.student_scores,
         "questions": st.session_state.questions,
+        "quiz_attempts": st.session_state.get("quiz_attempts", {}),
+        "quiz_completed": st.session_state.get("quiz_completed", {}),
+        "assignments": st.session_state.get("assignments", {}),
+        "quiz_questions": st.session_state.get("quiz_questions", QUIZ_QUESTIONS),
     }
     save_db_data(db)
 
@@ -640,9 +696,17 @@ db_data = load_db()
 st.session_state.users = db_data["users"]
 st.session_state.student_scores = db_data["student_scores"]
 st.session_state.questions = db_data["questions"]
+st.session_state.quiz_attempts = _mapping_or_default(db_data.get("quiz_attempts"), {})
+st.session_state.quiz_completed = _mapping_or_default(db_data.get("quiz_completed"), {})
+st.session_state.assignments = _mapping_or_default(db_data.get("assignments"), {})
+st.session_state.quiz_questions = _list_or_default(db_data.get("quiz_questions"), QUIZ_QUESTIONS.copy())
+
+for username, user_data in st.session_state.users.items():
+    user_data.setdefault("department", "")
+    user_data.setdefault("student_id", "")
 
 if "authenticated_user" not in st.session_state:
-    st.session_state.authenticated_user = None
+    st.session_state.authenticated_user = _restore_authenticated_user(st.session_state.users)
 
 # Game Quiz State Variables
 if "quiz_score" not in st.session_state:
@@ -651,6 +715,28 @@ if "quiz_index" not in st.session_state:
     st.session_state.quiz_index = 0
 if "quiz_streak" not in st.session_state:
     st.session_state.quiz_streak = 0
+
+def restrict_clipboard(element_id):
+        st.markdown(
+                f"""
+                <script>
+                (() => {{
+                    const install = () => {{
+                        window.parent.document.querySelectorAll('textarea').forEach((area) => {{
+                            if (area.dataset.clipboardRestricted) return;
+                            area.dataset.clipboardRestricted = 'true';
+                            ['copy', 'cut', 'paste', 'drop'].forEach((eventName) =>
+                                area.addEventListener(eventName, (event) => event.preventDefault())
+                            );
+                        }});
+                    }};
+                    install();
+                    new MutationObserver(install).observe(window.parent.document.body, {{childList: true, subtree: true}});
+                }})();
+                </script>
+                """,
+                unsafe_allow_html=True,
+        )
 
 # ==========================================
 # 2. CODE EXECUTION & LEADERBOARD HELPERS
@@ -681,6 +767,31 @@ def evaluate_script(user_code, test_inputs, expected_outputs):
             sys.stdout = sys.__stdout__
     return results
 
+
+def assessment_download(title, description, content, filename):
+    lines = (title + "\n\n" + description + "\n\nResponse:\n" + content).splitlines()[:55]
+    stream_lines = ["BT", "/F1 10 Tf", "50 750 Td"]
+    for line in lines:
+        escaped = line[:105].replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+        stream_lines.append(f"({escaped}) Tj")
+        stream_lines.append("0 -14 Td")
+    stream_lines.append("ET")
+    stream = "\n".join(stream_lines).encode("latin-1", "replace")
+    objects = [
+        b"1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n",
+        b"2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj\n",
+        b"3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>endobj\n",
+        b"4 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n",
+        f"5 0 obj<< /Length {len(stream)} >>stream\n".encode() + stream + b"\nendstream endobj\n",
+    ]
+    pdf = b"%PDF-1.4\n"; offsets = []
+    for obj in objects:
+        offsets.append(len(pdf)); pdf += obj
+    xref = len(pdf); pdf += f"xref\n0 {len(objects) + 1}\n0000000000 65535 f \n".encode()
+    pdf += b"".join(f"{offset:010d} 00000 n \n".encode() for offset in offsets)
+    pdf += f"trailer<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF".encode()
+    st.download_button("🖨️ Download / Print PDF", pdf, filename.replace(".html", ".pdf"), "application/pdf")
+
 def build_leaderboard_data():
     leaderboard_list = []
     for u_name, data in st.session_state.users.items():
@@ -698,11 +809,15 @@ def build_leaderboard_data():
                 "Email": data["email"],
                 "Questions Solved": len(passed_qs),
                 "Total Points": total_pts,
+                "Completion Time": min(
+                    (info.get("completed_at", "9999") for info in scores.values() if info.get("status") == "Passed"),
+                    default="9999",
+                ),
             })
 
     df = pd.DataFrame(leaderboard_list)
     if not df.empty:
-        df = df.sort_values(by="Total Points", ascending=False).reset_index(drop=True)
+        df = df.sort_values(by=["Total Points", "Completion Time"], ascending=[False, True]).reset_index(drop=True)
         df["Rank"] = df.index + 1
     return df
 
@@ -901,7 +1016,7 @@ def render_login_screen():
             unsafe_allow_html=True,
         )
 
-        tab_login, tab_register = st.tabs(["🔐 Sign In", "📝 Create Account"])
+        tab_login, tab_register, tab_recovery = st.tabs(["🔐 Sign In", "📝 Create Account", "🔑 Forgot Password"])
 
         with tab_login:
             with st.form("form_login"):
@@ -923,6 +1038,7 @@ def render_login_screen():
                         and st.session_state.users[matched_username].get("password") == password
                     ):
                         st.session_state.authenticated_user = matched_username
+                        st.query_params["auth"] = _auth_token(matched_username)
                         st.success("Login successful!")
                         st.rerun()
                     else:
@@ -932,12 +1048,14 @@ def render_login_screen():
             with st.form("form_register"):
                 new_name = st.text_input("Full Name *")
                 new_email = st.text_input("Email Address *")
+                new_department = st.selectbox("Department", ["", "Computer Science", "Information Technology", "Electronics", "Mechanical", "Other"])
+                new_student_id = st.text_input("Student ID")
                 new_username = st.text_input("Choose Username *").strip()
                 new_password = st.text_input("Choose Password *", type="password")
                 reg_submit = st.form_submit_button("Register Account", type="primary", use_container_width=True)
 
                 if reg_submit:
-                    if not (new_name.strip() and new_email.strip() and new_username and new_password):
+                    if not (new_name.strip() and new_email.strip() and new_username and new_password and new_department and new_student_id.strip()):
                         st.error("⚠️ All fields marked with * are mandatory!")
                     elif "@" not in new_email:
                         st.error("⚠️ Please enter a valid Email Address!")
@@ -946,17 +1064,40 @@ def render_login_screen():
                         for stored_username in st.session_state.users
                     ):
                         st.error("⚠️ Username already taken! Please choose another.")
+                    elif any(
+                        user.get("email", "").casefold() == new_email.strip().casefold()
+                        for user in st.session_state.users.values()
+                    ):
+                        st.error("⚠️ This email is already registered. One email can have only one account.")
                     else:
                         st.session_state.users[new_username] = {
                             "password": new_password,
                             "role": "Student",
                             "name": new_name.strip(),
                             "email": new_email.strip(),
+                            "department": new_department,
+                            "student_id": new_student_id.strip(),
                         }
                         st.session_state.student_scores[new_username] = {}
                         sync_to_disk()
                         st.success("🎉 Account created successfully! Switch to 'Sign In' to log in.")
                         st.rerun()
+
+        with tab_recovery:
+            st.info("Enter the username and registered email. A temporary password will be shown once.")
+            with st.form("form_forgot_password"):
+                recovery_username = st.text_input("Username").strip()
+                recovery_email = st.text_input("Registered email").strip()
+                recover_submit = st.form_submit_button("Generate Temporary Password", type="primary")
+                if recover_submit:
+                    account = st.session_state.users.get(recovery_username)
+                    if account and account.get("email", "").casefold() == recovery_email.casefold():
+                        temporary_password = f"Reset-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+                        account["password"] = temporary_password
+                        sync_to_disk()
+                        st.success(f"Temporary password: {temporary_password}")
+                    else:
+                        st.error("Username and registered email do not match.")
 
 # Dynamic CSS injection for inner application theme when logged in
 # Dynamic CSS injection for inner application theme when logged in
@@ -1155,6 +1296,7 @@ else:
 
     if st.sidebar.button("🚪 Logout", use_container_width=True):
         st.session_state.authenticated_user = None
+        st.query_params.clear()
         st.rerun()
 
     st.sidebar.markdown("---")
@@ -1165,8 +1307,8 @@ else:
     if current_user.get("role") in ADMIN_ROLES:
         st.title("👑 Professor Control & Analytics Panel")
 
-        tab1, tab2, tab3, tab4, tab5 = st.tabs(
-            ["📈 Analytics Dashboard", "📊 Student Gradebook", "🏆 Class Leaderboard", "➕ Add New Question", "👥 Student Management"]
+        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+            ["📈 Analytics Dashboard", "📊 Student Gradebook", "🏆 Class Leaderboard", "➕ Add New Question", "👥 Student Management", "📝 Assignments"]
         )
 
         with tab1:
@@ -1286,6 +1428,7 @@ else:
             st.subheader("Create New Problem")
             with st.form("add_q_form"):
                 q_title = st.text_input("Problem Title:")
+                q_unit = st.selectbox("Unit:", UNIT_NAMES)
                 q_topic = st.selectbox(
                     "Topic / Category:",
                     [
@@ -1303,6 +1446,7 @@ else:
 
                 if st.form_submit_button("➕ Publish Question") and q_title:
                     st.session_state.questions[q_title] = {
+                        "unit": q_unit,
                         "topic": q_topic,
                         "points": q_points,
                         "description": q_desc,
@@ -1313,15 +1457,56 @@ else:
                     sync_to_disk()
                     st.success(f"Added '{q_title}' successfully!")
 
+            st.markdown("#### Manage MCQ Questions")
+            with st.form("add_mcq_form"):
+                mcq_question = st.text_area("Question")
+                mcq_options = st.text_input("Options (separate with |)")
+                mcq_answer = st.text_input("Correct answer")
+                mcq_explanation = st.text_area("Explanation")
+                if st.form_submit_button("➕ Publish MCQ") and mcq_question and mcq_answer:
+                    options = [option.strip() for option in mcq_options.split("|") if option.strip()]
+                    if mcq_answer not in options:
+                        st.error("The correct answer must be one of the options.")
+                    else:
+                        st.session_state.quiz_questions.append({
+                            "question": mcq_question,
+                            "options": options,
+                            "answer": mcq_answer,
+                            "explanation": mcq_explanation,
+                        })
+                        sync_to_disk()
+                        st.success("MCQ published successfully.")
+
+            st.markdown("#### Existing MCQ Questions")
+            for number, mcq in enumerate(st.session_state.quiz_questions, 1):
+                st.write(f"{number}. {mcq['question']}")
+
         with tab5:
             render_student_management_panel()
+
+        with tab6:
+            st.subheader("Create Coding Assignment")
+            with st.form("assignment_form"):
+                assignment_title = st.text_input("Assignment title")
+                assignment_description = st.text_area("Assignment description")
+                assignment_input = st.text_area("Input test case")
+                assignment_output = st.text_input("Expected output")
+                if st.form_submit_button("➕ Publish Assignment") and assignment_title:
+                    st.session_state.assignments[assignment_title] = {
+                        "description": assignment_description,
+                        "inputs": [assignment_input],
+                        "expected_outputs": [assignment_output],
+                        "starter_code": "# Write your solution here\n",
+                    }
+                    sync_to_disk()
+                    st.success("Assignment published successfully.")
 
     # -------------------------------------------------------------
     # ROLE B: STUDENT PORTAL
     # -------------------------------------------------------------
     else:
         student_nav = st.sidebar.radio(
-            "🎮 Portal Navigation", ["🎮 Practice Quiz Game Studio", "📝 Assessment Coding Studio", "🏆 Class Leaderboard"]
+            "🎮 Portal Navigation", ["🎮 Practice Quiz Game Studio", "📝 Assessment Coding Studio", "📚 Assignments", "👤 My Profile", "🏆 Class Leaderboard"]
         )
 
         if student_nav == "🎮 Practice Quiz Game Studio":
@@ -1334,16 +1519,17 @@ else:
             with g2:
                 st.markdown(f'<div class="metric-card"><div class="metric-title">Current Streak</div><div class="metric-value">🔥 {st.session_state.quiz_streak}x</div></div>', unsafe_allow_html=True)
             with g3:
-                progress = (st.session_state.quiz_index / len(QUIZ_QUESTIONS))
+                progress = (st.session_state.quiz_index / len(st.session_state.quiz_questions))
                 st.markdown(f'<div class="metric-card"><div class="metric-title">Quiz Completion</div><div class="metric-value">{int(progress*100)}%</div></div>', unsafe_allow_html=True)
 
             st.markdown("---")
 
-            if st.session_state.quiz_index < len(QUIZ_QUESTIONS):
-                q_curr = QUIZ_QUESTIONS[st.session_state.quiz_index]
+            quiz_is_complete = current_username in st.session_state.quiz_completed
+            if st.session_state.quiz_index < len(st.session_state.quiz_questions) and not quiz_is_complete:
+                q_curr = st.session_state.quiz_questions[st.session_state.quiz_index]
                 
                 st.markdown('<div class="game-card">', unsafe_allow_html=True)
-                st.subheader(f"Question {st.session_state.quiz_index + 1} of {len(QUIZ_QUESTIONS)}")
+                st.subheader(f"Question {st.session_state.quiz_index + 1} of {len(st.session_state.quiz_questions)}")
                 st.markdown(f"#### {q_curr['question']}")
                 
                 user_choice = st.radio("Choose the correct answer:", q_curr["options"], key=f"q_{st.session_state.quiz_index}")
@@ -1351,6 +1537,16 @@ else:
                 col_btn1, col_btn2 = st.columns([1, 4])
                 with col_btn1:
                     if st.button("🚀 Lock Answer", type="primary"):
+                        quiz_attempt = {
+                            "question": q_curr["question"],
+                            "selected_answer": user_choice,
+                            "correct_answer": q_curr["answer"],
+                            "correct": user_choice == q_curr["answer"],
+                            "answered_at": datetime.now(timezone.utc).isoformat(),
+                        }
+                        st.session_state.quiz_attempts.setdefault(current_username, []).append(quiz_attempt)
+                        if st.session_state.quiz_index + 1 == len(st.session_state.quiz_questions):
+                            st.session_state.quiz_completed[current_username] = quiz_attempt["answered_at"]
                         if user_choice == q_curr["answer"]:
                             st.session_state.quiz_streak += 1
                             pts_gained = 10 * st.session_state.quiz_streak
@@ -1363,19 +1559,80 @@ else:
                             st.error(f"❌ Incorrect! The right answer was: **{q_curr['answer']}**")
                             st.info(f"💡 Explanation: {q_curr['explanation']}")
                         
+                        sync_to_disk()
                         st.session_state.quiz_index += 1
-                        st.button("Next Question ▶")
+                        st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
 
             else:
                 st.balloons()
-                st.success("🏆 Quest Complete! You've finished all quiz practice questions!")
+                st.success("🏆 Quest Complete! Your MCQ answers have been recorded by the portal.")
                 st.markdown(f"### Final XP Score: **{st.session_state.quiz_score} Points**")
+                quiz_export = "\n\n".join(
+                    f"{item['question']}\nAnswer: {item['selected_answer']}\nCorrect: {item['correct_answer']}"
+                    for item in st.session_state.quiz_attempts.get(current_username, [])
+                )
+                assessment_download("MCQ Practice Answers", "Quiz response record", quiz_export, "mcq_answers.html")
                 if st.button("🔄 Restart Quiz Arena"):
                     st.session_state.quiz_index = 0
                     st.session_state.quiz_score = 0
                     st.session_state.quiz_streak = 0
+                    st.session_state.quiz_completed.pop(current_username, None)
+                    st.session_state.quiz_attempts[current_username] = []
+                    sync_to_disk()
                     st.rerun()
+
+        elif student_nav == "📚 Assignments":
+            st.title("📝 Assignments")
+            if not st.session_state.assignments:
+                st.info("No assignments have been published yet.")
+            for assignment_title, assignment in st.session_state.assignments.items():
+                with st.expander(assignment_title):
+                    st.markdown(assignment.get("description", ""))
+                    assignment_code = st.text_area("Write and submit your code", value=assignment.get("starter_code", ""), key=f"assignment_code_{assignment_title}")
+                    restrict_clipboard(f"assignment_code_{assignment_title}")
+                    if st.button("Submit Assignment", key=f"submit_assignment_{assignment_title}"):
+                        results = evaluate_script(assignment_code, assignment.get("inputs", []), assignment.get("expected_outputs", []))
+                        passed = all(result[0] for result in results)
+                        st.session_state.student_scores[current_username][f"Assignment: {assignment_title}"] = {
+                            "status": "Passed" if passed else "Failed",
+                            "score": 10 if passed else 0,
+                            "completed_at": datetime.now(timezone.utc).isoformat() if passed else "",
+                        }
+                        sync_to_disk()
+                        st.success("Assignment passed and recorded." if passed else "Assignment failed. Review the output and try again.")
+                    assessment_download(assignment_title, assignment.get("description", ""), assignment_code, f"{assignment_title}.html")
+
+        elif student_nav == "👤 My Profile":
+            st.title("👤 My Profile")
+            profile = st.session_state.users[current_username]
+            with st.form("student_profile_form"):
+                profile_name = st.text_input("Full Name", value=profile.get("name", ""))
+                profile_email = st.text_input("Email", value=profile.get("email", ""))
+                department_options = ["", "Computer Science", "Information Technology", "Electronics", "Mechanical", "Other"]
+                profile_department = st.selectbox("Department", department_options, index=department_options.index(profile.get("department", "")) if profile.get("department", "") in department_options else 0)
+                profile_student_id = st.text_input("Student ID", value=profile.get("student_id", ""))
+                profile_password = st.text_input("New Password", type="password")
+                if st.form_submit_button("Save Profile"):
+                    normalized_email = profile_email.strip().casefold()
+                    duplicate_email = any(
+                        username != current_username
+                        and user.get("email", "").strip().casefold() == normalized_email
+                        for username, user in st.session_state.users.items()
+                    )
+                    if not normalized_email or "@" not in normalized_email:
+                        st.error("Please enter a valid email address.")
+                    elif duplicate_email:
+                        st.error("This email is already registered to another account.")
+                    else:
+                        profile["name"] = profile_name.strip() or profile.get("name", "")
+                        profile["email"] = profile_email.strip()
+                        profile["department"] = profile_department
+                        profile["student_id"] = profile_student_id.strip()
+                        if profile_password.strip():
+                            profile["password"] = profile_password.strip()
+                        sync_to_disk()
+                        st.success("Profile updated.")
 
         elif student_nav == "🏆 Class Leaderboard":
             render_leaderboard_view()
@@ -1385,13 +1642,18 @@ else:
 
             q_titles = list(st.session_state.questions.keys())
             topics = list(set(q["topic"] for q in st.session_state.questions.values()))
+            unit_number = st.sidebar.selectbox("Unit:", ["All Units", "Unit 1", "Unit 2", "Unit 3", "Unit 4", "Unit 5"])
             selected_topic = st.sidebar.selectbox("Filter Category:", ["All"] + sorted(topics))
 
             filtered_titles = [
                 t for t, q in st.session_state.questions.items()
-                if selected_topic == "All" or q["topic"] == selected_topic
+                if (unit_number == "All Units" or q.get("unit", "Unit 1") == unit_number)
+                and (selected_topic == "All" or q["topic"] == selected_topic)
             ]
 
+            if not filtered_titles:
+                st.info("No problems are available for this unit and category.")
+                st.stop()
             selected_title = st.sidebar.selectbox("Choose Problem:", filtered_titles)
             q_data = st.session_state.questions[selected_title]
 
@@ -1427,6 +1689,7 @@ else:
                     value=q_data["starter_code"],
                     height=280,
                 )
+                assessment_download(selected_title, q_data["description"], code_input, f"{selected_title}.html")
 
                 if st.button("▶ Submit & Evaluate", type="primary", use_container_width=True):
                     test_results = evaluate_script(
@@ -1448,6 +1711,7 @@ else:
                         st.session_state.student_scores[current_username][selected_title] = {
                             "status": "Passed",
                             "score": q_data.get("points", 10),
+                            "completed_at": datetime.now(timezone.utc).isoformat(),
                         }
                     else:
                         st.session_state.student_scores[current_username][selected_title] = {

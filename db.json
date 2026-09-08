@@ -1,518 +1,854 @@
 {
-    "users": {
-        "Reena_Samuel": {
-            "password": "Jenisam@7200.",
-            "role": "Industrial Trainer",
-            "name": "Trainer",
-            "email": "jenisam98896@gmail.com"
-        },
-        "rjay": {
-            "password": "Rjay@121274",
-            "role": "Student",
-            "name": "Jayaselvam Sadaiyandi",
-            "email": "jayaselvam411@gmail.com"
-        },
-        "reena": {
-            "password": "Jenisam",
-            "role": "Student",
-            "name": "Reena",
-            "email": "jenisam98896@gmail.com"
-        },
-        "Reena_samuel": {
-            "password": "Jenisam",
-            "role": "Student",
-            "name": "Reena Samuel",
-            "email": "abc@gmail.com"
-        },
-        "jay": {
-            "password": "Jay@123",
-            "role": "Student",
-            "name": "Jay",
-            "email": "abc@gmail.com"
-        }
+  "users": {
+    "Reena_Samuel": {
+      "password": "Jenisam@7200.",
+      "role": "Industrial Trainer",
+      "name": "Trainer",
+      "email": "jenisam98896@gamil.com",
+      "department": "",
+      "student_id": ""
     },
-    "student_scores": {
-        "rjay": {
-            "Q01. Print a Welcome Message": {
-                "status": "Passed",
-                "score": 10
-            },
-            "Q02. Add Two Numbers": {
-                "status": "Passed",
-                "score": 10
-            }
-        },
-        "reena": {
-            "Q01. Print a Welcome Message": {
-                "status": "Passed",
-                "score": 10
-            }
-        },
-        "Reena_Samuel": {},
-        "jay": {}
+    "rjay": {
+      "password": "Rjay@121274",
+      "role": "Student",
+      "name": "Jayaselvam Sadaiyandi",
+      "email": "jayaselvam411@gmail.com",
+      "department": "",
+      "student_id": ""
     },
-    "questions": {
-        "Q01. Print a Welcome Message": {
-            "topic": "Level 1 - Basic Python",
-            "points": 10,
-            "description": "Write a Python program to print:\n`Welcome to Machine Learning`",
-            "inputs": [
-                ""
-            ],
-            "expected_outputs": [
-                "Welcome to Machine Learning"
-            ],
-            "starter_code": "# Print welcome message\n"
-        },
-        "Q02. Add Two Numbers": {
-            "topic": "Level 1 - Basic Python",
-            "points": 10,
-            "description": "Write a program to input two numbers (one per line) and print their sum.",
-            "inputs": [
-                "10\n20",
-                "5\n15"
-            ],
-            "expected_outputs": [
-                "30",
-                "20"
-            ],
-            "starter_code": "num1 = int(input())\nnum2 = int(input())\n# Print their sum\n"
-        },
-        "Q03. Find the Larger Number": {
-            "topic": "Level 1 - Basic Python",
-            "points": 10,
-            "description": "Input two numbers (one per line) and print the larger one.",
-            "inputs": [
-                "15\n28",
-                "100\n45"
-            ],
-            "expected_outputs": [
-                "28",
-                "100"
-            ],
-            "starter_code": "a = int(input())\nb = int(input())\n# Write logic here\n"
-        },
-        "Q04. Even or Odd": {
-            "topic": "Level 1 - Basic Python",
-            "points": 10,
-            "description": "Input a number and determine whether it is `Even` or `Odd`.",
-            "inputs": [
-                "18",
-                "7"
-            ],
-            "expected_outputs": [
-                "Even",
-                "Odd"
-            ],
-            "starter_code": "num = int(input())\n# Print Even or Odd\n"
-        },
-        "Q05. Positive, Negative or Zero": {
-            "topic": "Level 1 - Basic Python",
-            "points": 10,
-            "description": "Input a number and print `Positive`, `Negative`, or `Zero`.",
-            "inputs": [
-                "10",
-                "-5",
-                "0"
-            ],
-            "expected_outputs": [
-                "Positive",
-                "Negative",
-                "Zero"
-            ],
-            "starter_code": "num = int(input())\n# Print Positive, Negative, or Zero\n"
-        },
-        "Q06. Calculate Average": {
-            "topic": "Level 1 - Basic Python",
-            "points": 10,
-            "description": "Input marks of 5 students (one per line) and calculate the average. Print in format: `Average = 80`.",
-            "inputs": [
-                "80\n70\n90\n60\n100"
-            ],
-            "expected_outputs": [
-                "Average = 80"
-            ],
-            "starter_code": "# Read 5 numbers and compute average\n"
-        },
-        "Q07. Celsius to Fahrenheit": {
-            "topic": "Level 1 - Basic Python",
-            "points": 10,
-            "description": "Convert Celsius to Fahrenheit using formula: F = (C * 9/5) + 32. Print result.",
-            "inputs": [
-                "25",
-                "0"
-            ],
-            "expected_outputs": [
-                "77",
-                "32"
-            ],
-            "starter_code": "celsius = float(input())\n# Calculate fahrenheit and print\n"
-        },
-        "Q08. Square of a Number": {
-            "topic": "Level 1 - Basic Python",
-            "points": 10,
-            "description": "Input a number and print its square.",
-            "inputs": [
-                "9",
-                "4"
-            ],
-            "expected_outputs": [
-                "81",
-                "16"
-            ],
-            "starter_code": "num = int(input())\n# Print square\n"
-        },
-        "Q09. Swap Two Numbers": {
-            "topic": "Level 1 - Basic Python",
-            "points": 10,
-            "description": "Input two numbers (one per line) and swap them without using a third variable. Print each number on a new line.",
-            "inputs": [
-                "10\n20"
-            ],
-            "expected_outputs": [
-                "20\n10"
-            ],
-            "starter_code": "a = int(input())\nb = int(input())\n# Swap without third variable\n"
-        },
-        "Q10. Area of Rectangle": {
-            "topic": "Level 1 - Basic Python",
-            "points": 10,
-            "description": "Input Length and Width (one per line). Print Area (Length * Width).",
-            "inputs": [
-                "10\n5"
-            ],
-            "expected_outputs": [
-                "50"
-            ],
-            "starter_code": "length = int(input())\nwidth = int(input())\n# Compute area\n"
-        },
-        "Q11. Grade Calculator": {
-            "topic": "Level 2 - Decision Making & Loops",
-            "points": 10,
-            "description": "Input marks and print grade:\n- 90-100 -> A\n- 80-89 -> B\n- 70-79 -> C\n- Below 70 -> Fail",
-            "inputs": [
-                "95",
-                "82",
-                "75",
-                "60"
-            ],
-            "expected_outputs": [
-                "A",
-                "B",
-                "C",
-                "Fail"
-            ],
-            "starter_code": "marks = int(input())\n# Print grade\n"
-        },
-        "Q12. Print Numbers 1 to 20": {
-            "topic": "Level 2 - Decision Making & Loops",
-            "points": 10,
-            "description": "Print numbers from 1 to 20, each on a new line.",
-            "inputs": [
-                ""
-            ],
-            "expected_outputs": [
-                "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20"
-            ],
-            "starter_code": "# Print 1 to 20 using loop\n"
-        },
-        "Q13. Print Even Numbers": {
-            "topic": "Level 2 - Decision Making & Loops",
-            "points": 10,
-            "description": "Print all even numbers between 1 and 100 inclusive, each on a new line.",
-            "inputs": [
-                ""
-            ],
-            "expected_outputs": [
-                "2\n4\n6\n8\n10\n12\n14\n16\n18\n20\n22\n24\n26\n28\n30\n32\n34\n36\n38\n40\n42\n44\n46\n48\n50\n52\n54\n56\n58\n60\n62\n64\n66\n68\n70\n72\n74\n76\n78\n80\n82\n84\n86\n88\n90\n92\n94\n96\n98\n100"
-            ],
-            "starter_code": "# Print even numbers from 2 to 100\n"
-        },
-        "Q14. Multiplication Table": {
-            "topic": "Level 2 - Decision Making & Loops",
-            "points": 10,
-            "description": "Input N and print its multiplication table from 1 to 10 in format: `N x 1 = Result`",
-            "inputs": [
-                "7"
-            ],
-            "expected_outputs": [
-                "7 x 1 = 7\n7 x 2 = 14\n7 x 3 = 21\n7 x 4 = 28\n7 x 5 = 35\n7 x 6 = 42\n7 x 7 = 49\n7 x 8 = 56\n7 x 9 = 63\n7 x 10 = 70"
-            ],
-            "starter_code": "n = int(input())\n# Print multiplication table\n"
-        },
-        "Q15. Sum of First N Numbers": {
-            "topic": "Level 2 - Decision Making & Loops",
-            "points": 10,
-            "description": "Input N and print the sum of first N natural numbers.",
-            "inputs": [
-                "5",
-                "10"
-            ],
-            "expected_outputs": [
-                "15",
-                "55"
-            ],
-            "starter_code": "n = int(input())\n# Compute sum\n"
-        },
-        "Q16. Factorial": {
-            "topic": "Level 2 - Decision Making & Loops",
-            "points": 10,
-            "description": "Input a number and print its factorial.",
-            "inputs": [
-                "5",
-                "4"
-            ],
-            "expected_outputs": [
-                "120",
-                "24"
-            ],
-            "starter_code": "n = int(input())\n# Compute factorial\n"
-        },
-        "Q17. Reverse a Number": {
-            "topic": "Level 2 - Decision Making & Loops",
-            "points": 10,
-            "description": "Input an integer and print its digits in reverse.",
-            "inputs": [
-                "1234",
-                "987"
-            ],
-            "expected_outputs": [
-                "4321",
-                "789"
-            ],
-            "starter_code": "num = input()\n# Print reverse\n"
-        },
-        "Q18. Count Digits": {
-            "topic": "Level 2 - Decision Making & Loops",
-            "points": 10,
-            "description": "Input a number and print total number of digits.",
-            "inputs": [
-                "987654",
-                "100"
-            ],
-            "expected_outputs": [
-                "6",
-                "3"
-            ],
-            "starter_code": "num = input()\n# Print digit count\n"
-        },
-        "Q19. Largest of Three Numbers": {
-            "topic": "Level 2 - Decision Making & Loops",
-            "points": 10,
-            "description": "Input three numbers (one per line) and print the largest one.",
-            "inputs": [
-                "10\n50\n20"
-            ],
-            "expected_outputs": [
-                "50"
-            ],
-            "starter_code": "a = int(input())\nb = int(input())\nc = int(input())\n# Find largest\n"
-        },
-        "Q20. Simple Calculator": {
-            "topic": "Level 2 - Decision Making & Loops",
-            "points": 10,
-            "description": "Input choice (1: Add, 2: Subtract, 3: Multiply, 4: Divide) followed by two numbers on new lines. Print calculated result.",
-            "inputs": [
-                "1\n10\n20",
-                "3\n5\n4"
-            ],
-            "expected_outputs": [
-                "30",
-                "20"
-            ],
-            "starter_code": "choice = int(input())\na = int(input())\nb = int(input())\n# Calculate\n"
-        },
-        "Q21. Find Maximum Value": {
-            "topic": "Level 3 - Lists (ML Data)",
-            "points": 15,
-            "description": "Given input space-separated integers representing a dataset, find and print maximum value.",
-            "inputs": [
-                "25 18 45 67 34"
-            ],
-            "expected_outputs": [
-                "67"
-            ],
-            "starter_code": "data = list(map(int, input().split()))\n# Print max\n"
-        },
-        "Q22. Find Minimum Value": {
-            "topic": "Level 3 - Lists (ML Data)",
-            "points": 15,
-            "description": "Given input space-separated integers, find and print minimum value.",
-            "inputs": [
-                "25 18 45 67 34"
-            ],
-            "expected_outputs": [
-                "18"
-            ],
-            "starter_code": "data = list(map(int, input().split()))\n# Print min\n"
-        },
-        "Q23. Calculate Average of Dataset": {
-            "topic": "Level 3 - Lists (ML Data)",
-            "points": 15,
-            "description": "Given input space-separated integers, print average.",
-            "inputs": [
-                "70 80 90 100 60"
-            ],
-            "expected_outputs": [
-                "80"
-            ],
-            "starter_code": "data = list(map(int, input().split()))\n# Compute average\n"
-        },
-        "Q24. Count Positive Numbers": {
-            "topic": "Level 3 - Lists (ML Data)",
-            "points": 15,
-            "description": "Given input space-separated numbers, count and print how many are positive (> 0).",
-            "inputs": [
-                "-5 8 10 -1 20"
-            ],
-            "expected_outputs": [
-                "3"
-            ],
-            "starter_code": "data = list(map(int, input().split()))\n# Count positive\n"
-        },
-        "Q25. Find Sum of Dataset": {
-            "topic": "Level 3 - Lists (ML Data)",
-            "points": 15,
-            "description": "Given space-separated integers, compute and print total sum.",
-            "inputs": [
-                "5 10 20 30"
-            ],
-            "expected_outputs": [
-                "65"
-            ],
-            "starter_code": "data = list(map(int, input().split()))\n# Compute sum\n"
-        },
-        "Q26. Remove Duplicate Values": {
-            "topic": "Level 3 - Lists (ML Data)",
-            "points": 15,
-            "description": "Given space-separated integers, remove duplicates preserving order and print as list.",
-            "inputs": [
-                "10 20 10 30 20"
-            ],
-            "expected_outputs": [
-                "[10, 20, 30]"
-            ],
-            "starter_code": "data = list(map(int, input().split()))\n# Print unique list\n"
-        },
-        "Q27. Sort Dataset": {
-            "topic": "Level 3 - Lists (ML Data)",
-            "points": 15,
-            "description": "Given space-separated integers, sort ascending and print list.",
-            "inputs": [
-                "45 12 67 5 30"
-            ],
-            "expected_outputs": [
-                "[5, 12, 30, 45, 67]"
-            ],
-            "starter_code": "data = list(map(int, input().split()))\n# Sort and print list\n"
-        },
-        "Q28. Count Occurrences": {
-            "topic": "Level 3 - Lists (ML Data)",
-            "points": 15,
-            "description": "Read dataset on line 1, and target on line 2. Print count of target.",
-            "inputs": [
-                "1 2 3 2 2 4\n2"
-            ],
-            "expected_outputs": [
-                "3"
-            ],
-            "starter_code": "data = list(map(int, input().split()))\ntarget = int(input())\n# Print count\n"
-        },
-        "Q29. Find Second Largest Number": {
-            "topic": "Level 3 - Lists (ML Data)",
-            "points": 15,
-            "description": "Given space-separated integers, print second largest number.",
-            "inputs": [
-                "12 45 78 25 90"
-            ],
-            "expected_outputs": [
-                "78"
-            ],
-            "starter_code": "data = list(map(int, input().split()))\n# Print second largest\n"
-        },
-        "Q30. Find Average Age of Students": {
-            "topic": "Level 3 - Lists (ML Data)",
-            "points": 15,
-            "description": "Given space-separated ages, print average age.",
-            "inputs": [
-                "18 19 20 21 22"
-            ],
-            "expected_outputs": [
-                "20"
-            ],
-            "starter_code": "ages = list(map(int, input().split()))\n# Compute average\n"
-        },
-        "Q31. Count Labeled Data": {
-            "topic": "Bonus ML-Oriented",
-            "points": 20,
-            "description": "Given space-separated label strings (e.g. `Cat Dog Dog Cat Cat`), count and print Cat and Dog counts in format:\n`Cat: 3\nDog: 2`",
-            "inputs": [
-                "Cat Dog Dog Cat Cat"
-            ],
-            "expected_outputs": [
-                "Cat: 3\nDog: 2"
-            ],
-            "starter_code": "labels = input().split()\n# Count labels\n"
-        },
-        "Q32. Classification Based on Marks": {
-            "topic": "Bonus ML-Oriented",
-            "points": 20,
-            "description": "Given space-separated marks, classify each as `'Pass'` (>= 50) or `'Fail'` (< 50). Print resulting list.",
-            "inputs": [
-                "45 60 80 30"
-            ],
-            "expected_outputs": [
-                "['Fail', 'Pass', 'Pass', 'Fail']"
-            ],
-            "starter_code": "marks = list(map(int, input().split()))\n# Classify marks and print list\n"
-        },
-        "Q33. Calculate Mean": {
-            "topic": "Bonus ML-Oriented",
-            "points": 20,
-            "description": "Given space-separated numbers, compute and print mean.",
-            "inputs": [
-                "10 15 20 25 30"
-            ],
-            "expected_outputs": [
-                "20"
-            ],
-            "starter_code": "data = list(map(int, input().split()))\n# Compute mean\n"
-        },
-        "Q34. Calculate Absolute Error": {
-            "topic": "Bonus ML-Oriented",
-            "points": 20,
-            "description": "Given actual values on line 1 and predicted on line 2 (space-separated), compute |actual - predicted| for each pair and print list.",
-            "inputs": [
-                "100 120 90\n110 118 95"
-            ],
-            "expected_outputs": [
-                "[10, 2, 5]"
-            ],
-            "starter_code": "actual = list(map(int, input().split()))\npredicted = list(map(int, input().split()))\n# Calculate absolute error\n"
-        },
-        "Q35. Find Mean Squared Error (Basic)": {
-            "topic": "Bonus ML-Oriented",
-            "points": 20,
-            "description": "Given actual on line 1 and predicted on line 2, compute MSE = (1/N) * sum((actual - predicted)^2). Print as float.",
-            "inputs": [
-                "100 120 90\n110 118 95"
-            ],
-            "expected_outputs": [
-                "43.0"
-            ],
-            "starter_code": "actual = list(map(int, input().split()))\npredicted = list(map(int, input().split()))\n# Compute MSE\n"
-        },
-        "Q36. Complete Machine Learning Workflow (Linear Regression)": {
-            "topic": "Bonus ML-Oriented",
-            "points": 50,
-            "description": "Read the number of training samples N. The next N lines contain two integers: House_Size and House_Price. Read one test house size. Train a simple Linear Regression model using the training data, predict the price for the given test house, and print the predicted price (rounded to 2 decimal places) followed by the Mean Squared Error (MSE) of the model on the training data.",
-            "inputs": [
-                "5\n1000 200000\n1200 240000\n1500 300000\n1800 360000\n2000 400000\n1600"
-            ],
-            "expected_outputs": [
-                "Predicted Price: 320000.00\nMSE: 0.00"
-            ],
-            "starter_code": "from sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_squared_error\n\nn = int(input())\nX = []\ny = []\n\nfor _ in range(n):\n    size, price = map(int, input().split())\n    X.append([size])\n    y.append(price)\n\n# Read test house size\ntest_size = int(input())\n\n# Train the model\n\n# Predict the price\n\n# Predict on training data\n\n# Calculate MSE\n\n# Print predicted price and MSE\n"
-        }
+    "reena": {
+      "password": "Jenisam",
+      "role": "Student",
+      "name": "Reena",
+      "email": "jenisam98896@gmail.com",
+      "department": "",
+      "student_id": ""
+    },
+    "Reena_samuel": {
+      "password": "Jenisam",
+      "role": "Student",
+      "name": "Reena Samuel",
+      "email": "abc@gmail.com",
+      "department": "",
+      "student_id": ""
+    },
+    "jay": {
+      "password": "Jay@123",
+      "role": "Student",
+      "name": "Jay",
+      "email": "abc@gmail.com",
+      "department": "",
+      "student_id": ""
+    },
+    "jay1": {
+      "password": "jay123",
+      "role": "Student",
+      "name": "Jay1",
+      "email": "Jay@gmail",
+      "department": "AIML - B",
+      "student_id": "123"
     }
+  },
+  "student_scores": {
+    "rjay": {
+      "Q01. Print a Welcome Message": {
+        "status": "Passed",
+        "score": 10
+      },
+      "Q02. Add Two Numbers": {
+        "status": "Passed",
+        "score": 10
+      }
+    },
+    "reena": {
+      "Q01. Print a Welcome Message": {
+        "status": "Passed",
+        "score": 10
+      }
+    },
+    "Reena_Samuel": {},
+    "jay": {},
+    "Reena_samuel": {},
+    "jay1": {}
+  },
+  "questions": {
+    "Q01. Print a Welcome Message": {
+      "topic": "Level 1 - Basic Python",
+      "points": 10,
+      "description": "Write a Python program to print:\n`Welcome to Machine Learning`",
+      "inputs": [
+        ""
+      ],
+      "expected_outputs": [
+        "Welcome to Machine Learning"
+      ],
+      "starter_code": "# Print welcome message\n",
+      "unit": "Unit 1"
+    },
+    "Q02. Add Two Numbers": {
+      "topic": "Level 1 - Basic Python",
+      "points": 10,
+      "description": "Write a program to input two numbers (one per line) and print their sum.",
+      "inputs": [
+        "10\n20",
+        "5\n15"
+      ],
+      "expected_outputs": [
+        "30",
+        "20"
+      ],
+      "starter_code": "num1 = int(input())\nnum2 = int(input())\n# Print their sum\n",
+      "unit": "Unit 2"
+    },
+    "Q03. Find the Larger Number": {
+      "topic": "Level 1 - Basic Python",
+      "points": 10,
+      "description": "Input two numbers (one per line) and print the larger one.",
+      "inputs": [
+        "15\n28",
+        "100\n45"
+      ],
+      "expected_outputs": [
+        "28",
+        "100"
+      ],
+      "starter_code": "a = int(input())\nb = int(input())\n# Write logic here\n",
+      "unit": "Unit 3"
+    },
+    "Q04. Even or Odd": {
+      "topic": "Level 1 - Basic Python",
+      "points": 10,
+      "description": "Input a number and determine whether it is `Even` or `Odd`.",
+      "inputs": [
+        "18",
+        "7"
+      ],
+      "expected_outputs": [
+        "Even",
+        "Odd"
+      ],
+      "starter_code": "num = int(input())\n# Print Even or Odd\n",
+      "unit": "Unit 4"
+    },
+    "Q05. Positive, Negative or Zero": {
+      "topic": "Level 1 - Basic Python",
+      "points": 10,
+      "description": "Input a number and print `Positive`, `Negative`, or `Zero`.",
+      "inputs": [
+        "10",
+        "-5",
+        "0"
+      ],
+      "expected_outputs": [
+        "Positive",
+        "Negative",
+        "Zero"
+      ],
+      "starter_code": "num = int(input())\n# Print Positive, Negative, or Zero\n",
+      "unit": "Unit 5"
+    },
+    "Q06. Calculate Average": {
+      "topic": "Level 1 - Basic Python",
+      "points": 10,
+      "description": "Input marks of 5 students (one per line) and calculate the average. Print in format: `Average = 80`.",
+      "inputs": [
+        "80\n70\n90\n60\n100"
+      ],
+      "expected_outputs": [
+        "Average = 80"
+      ],
+      "starter_code": "# Read 5 numbers and compute average\n",
+      "unit": "Unit 1"
+    },
+    "Q07. Celsius to Fahrenheit": {
+      "topic": "Level 1 - Basic Python",
+      "points": 10,
+      "description": "Convert Celsius to Fahrenheit using formula: F = (C * 9/5) + 32. Print result.",
+      "inputs": [
+        "25",
+        "0"
+      ],
+      "expected_outputs": [
+        "77",
+        "32"
+      ],
+      "starter_code": "celsius = float(input())\n# Calculate fahrenheit and print\n",
+      "unit": "Unit 2"
+    },
+    "Q08. Square of a Number": {
+      "topic": "Level 1 - Basic Python",
+      "points": 10,
+      "description": "Input a number and print its square.",
+      "inputs": [
+        "9",
+        "4"
+      ],
+      "expected_outputs": [
+        "81",
+        "16"
+      ],
+      "starter_code": "num = int(input())\n# Print square\n",
+      "unit": "Unit 3"
+    },
+    "Q09. Swap Two Numbers": {
+      "topic": "Level 1 - Basic Python",
+      "points": 10,
+      "description": "Input two numbers (one per line) and swap them without using a third variable. Print each number on a new line.",
+      "inputs": [
+        "10\n20"
+      ],
+      "expected_outputs": [
+        "20\n10"
+      ],
+      "starter_code": "a = int(input())\nb = int(input())\n# Swap without third variable\n",
+      "unit": "Unit 4"
+    },
+    "Q10. Area of Rectangle": {
+      "topic": "Level 1 - Basic Python",
+      "points": 10,
+      "description": "Input Length and Width (one per line). Print Area (Length * Width).",
+      "inputs": [
+        "10\n5"
+      ],
+      "expected_outputs": [
+        "50"
+      ],
+      "starter_code": "length = int(input())\nwidth = int(input())\n# Compute area\n",
+      "unit": "Unit 5"
+    },
+    "Q11. Grade Calculator": {
+      "topic": "Level 2 - Decision Making & Loops",
+      "points": 10,
+      "description": "Input marks and print grade:\n- 90-100 -> A\n- 80-89 -> B\n- 70-79 -> C\n- Below 70 -> Fail",
+      "inputs": [
+        "95",
+        "82",
+        "75",
+        "60"
+      ],
+      "expected_outputs": [
+        "A",
+        "B",
+        "C",
+        "Fail"
+      ],
+      "starter_code": "marks = int(input())\n# Print grade\n",
+      "unit": "Unit 1"
+    },
+    "Q12. Print Numbers 1 to 20": {
+      "topic": "Level 2 - Decision Making & Loops",
+      "points": 10,
+      "description": "Print numbers from 1 to 20, each on a new line.",
+      "inputs": [
+        ""
+      ],
+      "expected_outputs": [
+        "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20"
+      ],
+      "starter_code": "# Print 1 to 20 using loop\n",
+      "unit": "Unit 2"
+    },
+    "Q13. Print Even Numbers": {
+      "topic": "Level 2 - Decision Making & Loops",
+      "points": 10,
+      "description": "Print all even numbers between 1 and 100 inclusive, each on a new line.",
+      "inputs": [
+        ""
+      ],
+      "expected_outputs": [
+        "2\n4\n6\n8\n10\n12\n14\n16\n18\n20\n22\n24\n26\n28\n30\n32\n34\n36\n38\n40\n42\n44\n46\n48\n50\n52\n54\n56\n58\n60\n62\n64\n66\n68\n70\n72\n74\n76\n78\n80\n82\n84\n86\n88\n90\n92\n94\n96\n98\n100"
+      ],
+      "starter_code": "# Print even numbers from 2 to 100\n",
+      "unit": "Unit 3"
+    },
+    "Q14. Multiplication Table": {
+      "topic": "Level 2 - Decision Making & Loops",
+      "points": 10,
+      "description": "Input N and print its multiplication table from 1 to 10 in format: `N x 1 = Result`",
+      "inputs": [
+        "7"
+      ],
+      "expected_outputs": [
+        "7 x 1 = 7\n7 x 2 = 14\n7 x 3 = 21\n7 x 4 = 28\n7 x 5 = 35\n7 x 6 = 42\n7 x 7 = 49\n7 x 8 = 56\n7 x 9 = 63\n7 x 10 = 70"
+      ],
+      "starter_code": "n = int(input())\n# Print multiplication table\n",
+      "unit": "Unit 4"
+    },
+    "Q15. Sum of First N Numbers": {
+      "topic": "Level 2 - Decision Making & Loops",
+      "points": 10,
+      "description": "Input N and print the sum of first N natural numbers.",
+      "inputs": [
+        "5",
+        "10"
+      ],
+      "expected_outputs": [
+        "15",
+        "55"
+      ],
+      "starter_code": "n = int(input())\n# Compute sum\n",
+      "unit": "Unit 5"
+    },
+    "Q16. Factorial": {
+      "topic": "Level 2 - Decision Making & Loops",
+      "points": 10,
+      "description": "Input a number and print its factorial.",
+      "inputs": [
+        "5",
+        "4"
+      ],
+      "expected_outputs": [
+        "120",
+        "24"
+      ],
+      "starter_code": "n = int(input())\n# Compute factorial\n",
+      "unit": "Unit 1"
+    },
+    "Q17. Reverse a Number": {
+      "topic": "Level 2 - Decision Making & Loops",
+      "points": 10,
+      "description": "Input an integer and print its digits in reverse.",
+      "inputs": [
+        "1234",
+        "987"
+      ],
+      "expected_outputs": [
+        "4321",
+        "789"
+      ],
+      "starter_code": "num = input()\n# Print reverse\n",
+      "unit": "Unit 2"
+    },
+    "Q18. Count Digits": {
+      "topic": "Level 2 - Decision Making & Loops",
+      "points": 10,
+      "description": "Input a number and print total number of digits.",
+      "inputs": [
+        "987654",
+        "100"
+      ],
+      "expected_outputs": [
+        "6",
+        "3"
+      ],
+      "starter_code": "num = input()\n# Print digit count\n",
+      "unit": "Unit 3"
+    },
+    "Q19. Largest of Three Numbers": {
+      "topic": "Level 2 - Decision Making & Loops",
+      "points": 10,
+      "description": "Input three numbers (one per line) and print the largest one.",
+      "inputs": [
+        "10\n50\n20"
+      ],
+      "expected_outputs": [
+        "50"
+      ],
+      "starter_code": "a = int(input())\nb = int(input())\nc = int(input())\n# Find largest\n",
+      "unit": "Unit 4"
+    },
+    "Q20. Simple Calculator": {
+      "topic": "Level 2 - Decision Making & Loops",
+      "points": 10,
+      "description": "Input choice (1: Add, 2: Subtract, 3: Multiply, 4: Divide) followed by two numbers on new lines. Print calculated result.",
+      "inputs": [
+        "1\n10\n20",
+        "3\n5\n4"
+      ],
+      "expected_outputs": [
+        "30",
+        "20"
+      ],
+      "starter_code": "choice = int(input())\na = int(input())\nb = int(input())\n# Calculate\n",
+      "unit": "Unit 5"
+    },
+    "Q21. Find Maximum Value": {
+      "topic": "Level 3 - Lists (ML Data)",
+      "points": 15,
+      "description": "Given input space-separated integers representing a dataset, find and print maximum value.",
+      "inputs": [
+        "25 18 45 67 34"
+      ],
+      "expected_outputs": [
+        "67"
+      ],
+      "starter_code": "data = list(map(int, input().split()))\n# Print max\n",
+      "unit": "Unit 1"
+    },
+    "Q22. Find Minimum Value": {
+      "topic": "Level 3 - Lists (ML Data)",
+      "points": 15,
+      "description": "Given input space-separated integers, find and print minimum value.",
+      "inputs": [
+        "25 18 45 67 34"
+      ],
+      "expected_outputs": [
+        "18"
+      ],
+      "starter_code": "data = list(map(int, input().split()))\n# Print min\n",
+      "unit": "Unit 2"
+    },
+    "Q23. Calculate Average of Dataset": {
+      "topic": "Level 3 - Lists (ML Data)",
+      "points": 15,
+      "description": "Given input space-separated integers, print average.",
+      "inputs": [
+        "70 80 90 100 60"
+      ],
+      "expected_outputs": [
+        "80"
+      ],
+      "starter_code": "data = list(map(int, input().split()))\n# Compute average\n",
+      "unit": "Unit 3"
+    },
+    "Q24. Count Positive Numbers": {
+      "topic": "Level 3 - Lists (ML Data)",
+      "points": 15,
+      "description": "Given input space-separated numbers, count and print how many are positive (> 0).",
+      "inputs": [
+        "-5 8 10 -1 20"
+      ],
+      "expected_outputs": [
+        "3"
+      ],
+      "starter_code": "data = list(map(int, input().split()))\n# Count positive\n",
+      "unit": "Unit 4"
+    },
+    "Q25. Find Sum of Dataset": {
+      "topic": "Level 3 - Lists (ML Data)",
+      "points": 15,
+      "description": "Given space-separated integers, compute and print total sum.",
+      "inputs": [
+        "5 10 20 30"
+      ],
+      "expected_outputs": [
+        "65"
+      ],
+      "starter_code": "data = list(map(int, input().split()))\n# Compute sum\n",
+      "unit": "Unit 5"
+    },
+    "Q26. Remove Duplicate Values": {
+      "topic": "Level 3 - Lists (ML Data)",
+      "points": 15,
+      "description": "Given space-separated integers, remove duplicates preserving order and print as list.",
+      "inputs": [
+        "10 20 10 30 20"
+      ],
+      "expected_outputs": [
+        "[10, 20, 30]"
+      ],
+      "starter_code": "data = list(map(int, input().split()))\n# Print unique list\n",
+      "unit": "Unit 1"
+    },
+    "Q27. Sort Dataset": {
+      "topic": "Level 3 - Lists (ML Data)",
+      "points": 15,
+      "description": "Given space-separated integers, sort ascending and print list.",
+      "inputs": [
+        "45 12 67 5 30"
+      ],
+      "expected_outputs": [
+        "[5, 12, 30, 45, 67]"
+      ],
+      "starter_code": "data = list(map(int, input().split()))\n# Sort and print list\n",
+      "unit": "Unit 2"
+    },
+    "Q28. Count Occurrences": {
+      "topic": "Level 3 - Lists (ML Data)",
+      "points": 15,
+      "description": "Read dataset on line 1, and target on line 2. Print count of target.",
+      "inputs": [
+        "1 2 3 2 2 4\n2"
+      ],
+      "expected_outputs": [
+        "3"
+      ],
+      "starter_code": "data = list(map(int, input().split()))\ntarget = int(input())\n# Print count\n",
+      "unit": "Unit 3"
+    },
+    "Q29. Find Second Largest Number": {
+      "topic": "Level 3 - Lists (ML Data)",
+      "points": 15,
+      "description": "Given space-separated integers, print second largest number.",
+      "inputs": [
+        "12 45 78 25 90"
+      ],
+      "expected_outputs": [
+        "78"
+      ],
+      "starter_code": "data = list(map(int, input().split()))\n# Print second largest\n",
+      "unit": "Unit 4"
+    },
+    "Q30. Find Average Age of Students": {
+      "topic": "Level 3 - Lists (ML Data)",
+      "points": 15,
+      "description": "Given space-separated ages, print average age.",
+      "inputs": [
+        "18 19 20 21 22"
+      ],
+      "expected_outputs": [
+        "20"
+      ],
+      "starter_code": "ages = list(map(int, input().split()))\n# Compute average\n",
+      "unit": "Unit 5"
+    },
+    "Q31. Count Labeled Data": {
+      "topic": "Bonus ML-Oriented",
+      "points": 20,
+      "description": "Given space-separated label strings (e.g. `Cat Dog Dog Cat Cat`), count and print Cat and Dog counts in format:\n`Cat: 3\nDog: 2`",
+      "inputs": [
+        "Cat Dog Dog Cat Cat"
+      ],
+      "expected_outputs": [
+        "Cat: 3\nDog: 2"
+      ],
+      "starter_code": "labels = input().split()\n# Count labels\n",
+      "unit": "Unit 1"
+    },
+    "Q32. Classification Based on Marks": {
+      "topic": "Bonus ML-Oriented",
+      "points": 20,
+      "description": "Given space-separated marks, classify each as `'Pass'` (>= 50) or `'Fail'` (< 50). Print resulting list.",
+      "inputs": [
+        "45 60 80 30"
+      ],
+      "expected_outputs": [
+        "['Fail', 'Pass', 'Pass', 'Fail']"
+      ],
+      "starter_code": "marks = list(map(int, input().split()))\n# Classify marks and print list\n",
+      "unit": "Unit 2"
+    },
+    "Q33. Calculate Mean": {
+      "topic": "Bonus ML-Oriented",
+      "points": 20,
+      "description": "Given space-separated numbers, compute and print mean.",
+      "inputs": [
+        "10 15 20 25 30"
+      ],
+      "expected_outputs": [
+        "20"
+      ],
+      "starter_code": "data = list(map(int, input().split()))\n# Compute mean\n",
+      "unit": "Unit 3"
+    },
+    "Q34. Calculate Absolute Error": {
+      "topic": "Bonus ML-Oriented",
+      "points": 20,
+      "description": "Given actual values on line 1 and predicted on line 2 (space-separated), compute |actual - predicted| for each pair and print list.",
+      "inputs": [
+        "100 120 90\n110 118 95"
+      ],
+      "expected_outputs": [
+        "[10, 2, 5]"
+      ],
+      "starter_code": "actual = list(map(int, input().split()))\npredicted = list(map(int, input().split()))\n# Calculate absolute error\n",
+      "unit": "Unit 4"
+    },
+    "Q35. Find Mean Squared Error (Basic)": {
+      "topic": "Bonus ML-Oriented",
+      "points": 20,
+      "description": "Given actual on line 1 and predicted on line 2, compute MSE = (1/N) * sum((actual - predicted)^2). Print as float.",
+      "inputs": [
+        "100 120 90\n110 118 95"
+      ],
+      "expected_outputs": [
+        "43.0"
+      ],
+      "starter_code": "actual = list(map(int, input().split()))\npredicted = list(map(int, input().split()))\n# Compute MSE\n",
+      "unit": "Unit 5"
+    },
+    "Q36. Complete Machine Learning Workflow (Linear Regression)": {
+      "topic": "Bonus ML-Oriented",
+      "points": 50,
+      "description": "Read the number of training samples N. The next N lines contain two integers: House_Size and House_Price. Read one test house size. Train a simple Linear Regression model using the training data, predict the price for the given test house, and print the predicted price (rounded to 2 decimal places) followed by the Mean Squared Error (MSE) of the model on the training data.",
+      "inputs": [
+        "5\n1000 200000\n1200 240000\n1500 300000\n1800 360000\n2000 400000\n1600"
+      ],
+      "expected_outputs": [
+        "Predicted Price: 320000.00\nMSE: 0.00"
+      ],
+      "starter_code": "from sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_squared_error\n\nn = int(input())\nX = []\ny = []\n\nfor _ in range(n):\n    size, price = map(int, input().split())\n    X.append([size])\n    y.append(price)\n\n# Read test house size\ntest_size = int(input())\n\n# Train the model\n\n# Predict the price\n\n# Predict on training data\n\n# Calculate MSE\n\n# Print predicted price and MSE\n",
+      "unit": "Unit 1"
+    }
+  },
+  "quiz_attempts": {},
+  "assignments": {},
+  "quiz_questions": [
+    {
+      "question": "Which Python library is primarily used for Data Manipulation?",
+      "options": [
+        "Pandas",
+        "PyGame",
+        "Flask",
+        "OpenCV"
+      ],
+      "answer": "Pandas",
+      "explanation": "Pandas provides DataFrames and Series for working with structured data."
+    },
+    {
+      "question": "What is the result of `len([1, 2, 3, 4])`?",
+      "options": [
+        "3",
+        "4",
+        "5",
+        "0"
+      ],
+      "answer": "4",
+      "explanation": "The len() function returns the total number of items in a list."
+    },
+    {
+      "question": "Which evaluation metric is used for regression models?",
+      "options": [
+        "Accuracy",
+        "Mean Squared Error (MSE)",
+        "Confusion Matrix",
+        "F1 Score"
+      ],
+      "answer": "Mean Squared Error (MSE)",
+      "explanation": "MSE measures the average squared difference between estimated and actual values."
+    },
+    {
+      "question": "What does `input()` function return in Python by default?",
+      "options": [
+        "Integer",
+        "Float",
+        "String",
+        "Boolean"
+      ],
+      "answer": "String",
+      "explanation": "input() always reads input as a string type unless explicitly cast."
+    },
+    {
+      "question": "Which operator is used for exponentiation (power) in Python?",
+      "options": [
+        "^",
+        "**",
+        "//",
+        "%"
+      ],
+      "answer": "**",
+      "explanation": "** is used for raising a number to a power (e.g., 2**3 = 8)."
+    },
+    {
+      "question": "Which Python library is mainly used for numerical computations?",
+      "options": [
+        "NumPy",
+        "Flask",
+        "Tkinter",
+        "Requests"
+      ],
+      "answer": "NumPy",
+      "explanation": "NumPy provides fast array operations and mathematical functions for numerical computing."
+    },
+    {
+      "question": "Which function is used to display output in Python?",
+      "options": [
+        "display()",
+        "echo()",
+        "print()",
+        "show()"
+      ],
+      "answer": "print()",
+      "explanation": "The print() function displays output on the console."
+    },
+    {
+      "question": "Which data structure stores key-value pairs in Python?",
+      "options": [
+        "List",
+        "Tuple",
+        "Dictionary",
+        "Set"
+      ],
+      "answer": "Dictionary",
+      "explanation": "A dictionary stores data as key-value pairs."
+    },
+    {
+      "question": "Which keyword is used to define a function in Python?",
+      "options": [
+        "func",
+        "define",
+        "def",
+        "function"
+      ],
+      "answer": "def",
+      "explanation": "The 'def' keyword is used to create a function in Python."
+    },
+    {
+      "question": "Which machine learning algorithm is commonly used for classification?",
+      "options": [
+        "Linear Regression",
+        "Logistic Regression",
+        "K-Means",
+        "PCA"
+      ],
+      "answer": "Logistic Regression",
+      "explanation": "Logistic Regression is used to classify data into categories."
+    },
+    {
+      "question": "What is the output of `5 // 2` in Python?",
+      "options": [
+        "2",
+        "2.5",
+        "3",
+        "1"
+      ],
+      "answer": "2",
+      "explanation": "The // operator performs floor division and returns the integer quotient."
+    },
+    {
+      "question": "Which library is commonly used for creating visualizations in Python?",
+      "options": [
+        "NumPy",
+        "Pandas",
+        "Matplotlib",
+        "TensorFlow"
+      ],
+      "answer": "Matplotlib",
+      "explanation": "Matplotlib is widely used for plotting graphs and charts."
+    },
+    {
+      "question": "Which of the following is a supervised learning algorithm?",
+      "options": [
+        "K-Means",
+        "DBSCAN",
+        "Linear Regression",
+        "Apriori"
+      ],
+      "answer": "Linear Regression",
+      "explanation": "Linear Regression is a supervised learning algorithm used for prediction."
+    },
+    {
+      "question": "Which function converts a string to an integer?",
+      "options": [
+        "str()",
+        "float()",
+        "int()",
+        "bool()"
+      ],
+      "answer": "int()",
+      "explanation": "The int() function converts compatible values into integers."
+    },
+    {
+      "question": "What is the correct extension for Python files?",
+      "options": [
+        ".java",
+        ".py",
+        ".cpp",
+        ".exe"
+      ],
+      "answer": ".py",
+      "explanation": "Python source code files use the .py extension."
+    },
+    {
+      "question": "Which metric is commonly used to evaluate classification models?",
+      "options": [
+        "Accuracy",
+        "Mean Absolute Error",
+        "RMSE",
+        "R-Squared"
+      ],
+      "answer": "Accuracy",
+      "explanation": "Accuracy measures the percentage of correct predictions."
+    },
+    {
+      "question": "Which keyword is used for conditional statements in Python?",
+      "options": [
+        "switch",
+        "if",
+        "case",
+        "loop"
+      ],
+      "answer": "if",
+      "explanation": "The 'if' keyword is used to make decisions based on conditions."
+    },
+    {
+      "question": "Which function is used to read a CSV file using Pandas?",
+      "options": [
+        "pd.load_csv()",
+        "pd.read_csv()",
+        "pd.open_csv()",
+        "pd.import_csv()"
+      ],
+      "answer": "pd.read_csv()",
+      "explanation": "pd.read_csv() reads data from CSV files into a DataFrame."
+    },
+    {
+      "question": "What is the output of `type(3.14)`?",
+      "options": [
+        "int",
+        "float",
+        "str",
+        "bool"
+      ],
+      "answer": "float",
+      "explanation": "3.14 is a floating-point number, so its type is float."
+    },
+    {
+      "question": "Which algorithm is commonly used for clustering?",
+      "options": [
+        "Decision Tree",
+        "K-Means",
+        "Linear Regression",
+        "Naive Bayes"
+      ],
+      "answer": "K-Means",
+      "explanation": "K-Means is one of the most popular clustering algorithms."
+    },
+    {
+      "question": "Which symbol is used to write comments in Python?",
+      "options": [
+        "//",
+        "#",
+        "/*",
+        "--"
+      ],
+      "answer": "#",
+      "explanation": "Single-line comments in Python begin with the # symbol."
+    },
+    {
+      "question": "Which function returns the largest value in a list?",
+      "options": [
+        "largest()",
+        "high()",
+        "max()",
+        "top()"
+      ],
+      "answer": "max()",
+      "explanation": "The max() function returns the maximum value from an iterable."
+    },
+    {
+      "question": "Which library is widely used for building deep learning models?",
+      "options": [
+        "TensorFlow",
+        "BeautifulSoup",
+        "OpenCV",
+        "PyGame"
+      ],
+      "answer": "TensorFlow",
+      "explanation": "TensorFlow is a popular framework for deep learning and neural networks."
+    },
+    {
+      "question": "What is the output of `bool(0)`?",
+      "options": [
+        "True",
+        "False",
+        "0",
+        "None"
+      ],
+      "answer": "False",
+      "explanation": "In Python, the integer value 0 evaluates to False."
+    },
+    {
+      "question": "Which evaluation metric is commonly used for clustering?",
+      "options": [
+        "Silhouette Score",
+        "Accuracy",
+        "Precision",
+        "Recall"
+      ],
+      "answer": "Silhouette Score",
+      "explanation": "The Silhouette Score measures how well data points fit within their assigned clusters."
+    }
+  ],
+  "quiz_completed": {}
 }
