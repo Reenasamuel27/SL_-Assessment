@@ -1557,14 +1557,23 @@ else:
                     for title in unit_titles
                     if student_scores.get(title, {}).get("status") == "Passed"
                 )
-                record_label = f"{unit_passed} solved · {unit_marks} marks" if unit_passed else "NO RECORD"
+                if unit_passed:
+                    record_label = f"{unit_passed} solved · {unit_marks} marks"
+                else:
+                    record_label = "NO RECORD"
+                if unit_name == "Unit 1":
+                    detail_label = f"Assessment: {len(st.session_state.questions)} questions · MCQ: {len(st.session_state.quiz_questions)} questions"
+                elif unit_passed:
+                    detail_label = f"Assessment: {len(unit_titles)} questions · MCQ: NO RECORD"
+                else:
+                    detail_label = "Assessment: NO RECORD · MCQ: NO RECORD"
                 podium_class = ["podium-1", "podium-2", "podium-3"][unit_index % 3]
 
                 with unit_columns[unit_index % 3]:
                     st.markdown(
                         f'<div class="{podium_class}"><h2>{unit_name}</h2>'
                         f'<p style="font-size:1.35rem; font-weight:800;">{record_label}</p>'
-                        f'<small>{len(unit_titles)} questions available</small></div>',
+                        f'<small>{detail_label}</small></div>',
                         unsafe_allow_html=True,
                     )
                     if st.button(f"Open {unit_name}", key=f"open_{unit_name}", use_container_width=True):
@@ -1717,16 +1726,12 @@ else:
         else:
             st.title("⚡ B.Tech ML Assessment Portal")
 
-            q_titles = list(st.session_state.questions.keys())
+            if st.button("← Back to Unit Dashboard", type="secondary"):
+                st.session_state.student_nav_override = "🏠 Unit Dashboard"
+                st.rerun()
+
             topics = list(set(q["topic"] for q in st.session_state.questions.values()))
-            default_unit = st.session_state.get("selected_student_unit", "All Units")
-            unit_number = st.radio(
-                "Unit Navigation",
-                ["All Units"] + UNIT_NAMES,
-                horizontal=True,
-                index=(UNIT_NAMES.index(default_unit) + 1) if default_unit in UNIT_NAMES else 0,
-                key="assessment_unit_navigation",
-            )
+            unit_number = st.session_state.get("selected_student_unit", "All Units")
             st.subheader(f"📊 {unit_number} Dashboard")
             selected_topic = st.sidebar.selectbox("Filter Category:", ["All"] + sorted(topics))
 
