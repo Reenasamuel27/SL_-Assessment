@@ -559,6 +559,7 @@ def load_db():
     data["questions"] = _mapping_or_default(data.get("questions"), DEFAULT_QUESTIONS)
     data["quiz_attempts"] = _mapping_or_default(data.get("quiz_attempts"), {})
     data["quiz_completed"] = _mapping_or_default(data.get("quiz_completed"), {})
+    data["quiz_progress"] = _mapping_or_default(data.get("quiz_progress"), {})
     data["assignments"] = _mapping_or_default(data.get("assignments"), {})
     data["quiz_questions"] = _list_or_default(data.get("quiz_questions"), QUIZ_QUESTIONS.copy())
 
@@ -603,6 +604,7 @@ def sync_to_disk():
         "questions": st.session_state.questions,
         "quiz_attempts": st.session_state.get("quiz_attempts", {}),
         "quiz_completed": st.session_state.get("quiz_completed", {}),
+        "quiz_progress": st.session_state.get("quiz_progress", {}),
         "assignments": st.session_state.get("assignments", {}),
         "quiz_questions": st.session_state.get("quiz_questions", QUIZ_QUESTIONS),
     }
@@ -698,6 +700,7 @@ st.session_state.student_scores = db_data["student_scores"]
 st.session_state.questions = db_data["questions"]
 st.session_state.quiz_attempts = _mapping_or_default(db_data.get("quiz_attempts"), {})
 st.session_state.quiz_completed = _mapping_or_default(db_data.get("quiz_completed"), {})
+st.session_state.quiz_progress = _mapping_or_default(db_data.get("quiz_progress"), {})
 st.session_state.assignments = _mapping_or_default(db_data.get("assignments"), {})
 st.session_state.quiz_questions = _list_or_default(db_data.get("quiz_questions"), QUIZ_QUESTIONS.copy())
 
@@ -1290,6 +1293,11 @@ else:
     current_username = st.session_state.authenticated_user
     current_user = st.session_state.users[current_username]
 
+    saved_quiz_progress = st.session_state.quiz_progress.get(current_username, {})
+    st.session_state.quiz_score = int(saved_quiz_progress.get("score", 0))
+    st.session_state.quiz_streak = int(saved_quiz_progress.get("streak", 0))
+    st.session_state.quiz_index = int(saved_quiz_progress.get("index", 0))
+
     st.sidebar.markdown(f"### 👤 {current_user['name']}")
     st.sidebar.caption(f"📧 {current_user['email']}")
     st.sidebar.caption(f"🛡️ Role: **{current_user['role']}**")
@@ -1305,6 +1313,7 @@ else:
     # ROLE A: PROFESSOR ADMIN PANEL
     # -------------------------------------------------------------
     if current_user.get("role") in ADMIN_ROLES:
+        trainer_unit = st.sidebar.selectbox("Unit Navigation", ["All Units"] + UNIT_NAMES)
         st.title("👑 Professor Control & Analytics Panel")
 
         tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
@@ -1426,6 +1435,12 @@ else:
 
         with tab4:
             st.subheader("Create New Problem")
+            visible_questions = {
+                title: question
+                for title, question in st.session_state.questions.items()
+                if trainer_unit == "All Units" or question.get("unit", "Unit 1") == trainer_unit
+            }
+            st.caption(f"Showing {trainer_unit} question bank")
             with st.form("add_q_form"):
                 q_title = st.text_input("Problem Title:")
                 q_unit = st.selectbox("Unit:", UNIT_NAMES)
@@ -1456,6 +1471,10 @@ else:
                     }
                     sync_to_disk()
                     st.success(f"Added '{q_title}' successfully!")
+
+            st.markdown("#### Existing Coding Questions")
+            for question_title in visible_questions:
+                st.write(question_title)
 
             st.markdown("#### Manage MCQ Questions")
             with st.form("add_mcq_form"):
@@ -1559,8 +1578,13 @@ else:
                             st.error(f"❌ Incorrect! The right answer was: **{q_curr['answer']}**")
                             st.info(f"💡 Explanation: {q_curr['explanation']}")
                         
-                        sync_to_disk()
                         st.session_state.quiz_index += 1
+                        st.session_state.quiz_progress[current_username] = {
+                            "score": st.session_state.quiz_score,
+                            "streak": st.session_state.quiz_streak,
+                            "index": st.session_state.quiz_index,
+                        }
+                        sync_to_disk()
                         st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1577,6 +1601,11 @@ else:
                     st.session_state.quiz_index = 0
                     st.session_state.quiz_score = 0
                     st.session_state.quiz_streak = 0
+                    st.session_state.quiz_progress[current_username] = {
+                        "score": 0,
+                        "streak": 0,
+                        "index": 0,
+                    }
                     st.session_state.quiz_completed.pop(current_username, None)
                     st.session_state.quiz_attempts[current_username] = []
                     sync_to_disk()
@@ -1642,7 +1671,11 @@ else:
 
             q_titles = list(st.session_state.questions.keys())
             topics = list(set(q["topic"] for q in st.session_state.questions.values()))
-            unit_number = st.sidebar.selectbox("Unit:", ["All Units", "Unit 1", "Unit 2", "Unit 3", "Unit 4", "Unit 5"])
+            unit_number = st.radio(
+                "Unit Navigation",
+                ["All Units"] + UNIT_NAMES,
+                horizontal=True,
+            )
             selected_topic = st.sidebar.selectbox("Filter Category:", ["All"] + sorted(topics))
 
             filtered_titles = [
