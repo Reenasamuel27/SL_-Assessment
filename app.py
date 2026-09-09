@@ -1304,6 +1304,9 @@ else:
 
     if st.sidebar.button("🚪 Logout", use_container_width=True):
         st.session_state.authenticated_user = None
+        st.session_state.pop("student_portal_nav", None)
+        st.session_state.pop("selected_student_unit", None)
+        st.session_state.pop("assessment_unit_navigation", None)
         st.query_params.clear()
         st.rerun()
 
@@ -1524,11 +1527,56 @@ else:
     # ROLE B: STUDENT PORTAL
     # -------------------------------------------------------------
     else:
+        if "student_nav_override" in st.session_state:
+            st.session_state.student_portal_nav = st.session_state.pop("student_nav_override")
         student_nav = st.sidebar.radio(
-            "🎮 Portal Navigation", ["🎮 Practice Quiz Game Studio", "📝 Assessment Coding Studio", "📚 Assignments", "👤 My Profile", "🏆 Class Leaderboard"]
+            "🎮 Portal Navigation",
+            ["🏠 Unit Dashboard", "🎮 Practice Quiz Game Studio", "📝 Assessment Coding Studio", "📚 Assignments", "👤 My Profile", "🏆 Class Leaderboard"],
+            key="student_portal_nav",
         )
 
-        if student_nav == "🎮 Practice Quiz Game Studio":
+        if student_nav == "🏠 Unit Dashboard":
+            st.title("⚡ B.Tech ML Learning Dashboard")
+            st.caption("Choose a unit to view its progress and continue your assessment.")
+
+            student_scores = st.session_state.student_scores.get(current_username, {})
+            unit_columns = st.columns(3)
+            for unit_index, unit_name in enumerate(UNIT_NAMES):
+                unit_titles = [
+                    title
+                    for title, question in st.session_state.questions.items()
+                    if question.get("unit", "Unit 1") == unit_name
+                ]
+                unit_passed = sum(
+                    1
+                    for title in unit_titles
+                    if student_scores.get(title, {}).get("status") == "Passed"
+                )
+                unit_marks = sum(
+                    st.session_state.questions[title].get("points", 10)
+                    for title in unit_titles
+                    if student_scores.get(title, {}).get("status") == "Passed"
+                )
+                record_label = f"{unit_passed} solved · {unit_marks} marks" if unit_passed else "NO RECORD"
+                podium_class = ["podium-1", "podium-2", "podium-3"][unit_index % 3]
+
+                with unit_columns[unit_index % 3]:
+                    st.markdown(
+                        f'<div class="{podium_class}"><h2>{unit_name}</h2>'
+                        f'<p style="font-size:1.35rem; font-weight:800;">{record_label}</p>'
+                        f'<small>{len(unit_titles)} questions available</small></div>',
+                        unsafe_allow_html=True,
+                    )
+                    if st.button(f"Open {unit_name}", key=f"open_{unit_name}", use_container_width=True):
+                        st.session_state.selected_student_unit = unit_name
+                        st.session_state.student_nav_override = "📝 Assessment Coding Studio"
+                        st.rerun()
+
+            selected_unit = st.session_state.get("selected_student_unit")
+            if selected_unit:
+                st.info(f"Current unit: {selected_unit}. Use the sidebar to return to this dashboard.")
+
+        elif student_nav == "🎮 Practice Quiz Game Studio":
             st.title("🎮 Code Quest - Interactive Quiz Arena")
             st.caption("Practice key ML & Python concepts in game mode before tackling graded assessments!")
 
@@ -1671,10 +1719,13 @@ else:
 
             q_titles = list(st.session_state.questions.keys())
             topics = list(set(q["topic"] for q in st.session_state.questions.values()))
+            default_unit = st.session_state.get("selected_student_unit", "All Units")
             unit_number = st.radio(
                 "Unit Navigation",
                 ["All Units"] + UNIT_NAMES,
                 horizontal=True,
+                index=(UNIT_NAMES.index(default_unit) + 1) if default_unit in UNIT_NAMES else 0,
+                key="assessment_unit_navigation",
             )
             st.subheader(f"📊 {unit_number} Dashboard")
             selected_topic = st.sidebar.selectbox("Filter Category:", ["All"] + sorted(topics))
