@@ -1552,7 +1552,7 @@ else:
         if "student_nav_override" in st.session_state:
             st.session_state.student_portal_nav = st.session_state.pop("student_nav_override")
         selected_unit = st.session_state.get("selected_student_unit")
-        student_nav_options = ["🧭 Unit Navigation"]
+        student_nav_options = ["🧭 Unit Navigation", "👤 My Profile"]
         if selected_unit:
             student_nav_options = [
                 "🎮 Practice Quiz Game Studio",
@@ -1624,6 +1624,37 @@ else:
                         st.session_state.selected_student_unit = unit_name
                         st.session_state.student_nav_override = "📝 Assessment Coding Studio"
                         st.rerun()
+
+        elif student_nav == "👤 My Profile":
+            st.title("👤 My Profile")
+            profile = st.session_state.users[current_username]
+            with st.form("student_profile_form"):
+                profile_name = st.text_input("Full Name", value=profile.get("name", ""))
+                profile_email = st.text_input("Email", value=profile.get("email", ""))
+                department_options = ["", "Computer Science", "Information Technology", "Electronics", "Mechanical", "Other"]
+                profile_department = st.selectbox("Department", department_options, index=department_options.index(profile.get("department", "")) if profile.get("department", "") in department_options else 0)
+                profile_student_id = st.text_input("Student ID", value=profile.get("student_id", ""))
+                profile_password = st.text_input("New Password", type="password")
+                if st.form_submit_button("Save Profile"):
+                    normalized_email = profile_email.strip().casefold()
+                    duplicate_email = any(
+                        username != current_username
+                        and user.get("email", "").strip().casefold() == normalized_email
+                        for username, user in st.session_state.users.items()
+                    )
+                    if not normalized_email or "@" not in normalized_email:
+                        st.error("Please enter a valid email address.")
+                    elif duplicate_email:
+                        st.error("This email is already registered to another account.")
+                    else:
+                        profile["name"] = profile_name.strip() or profile.get("name", "")
+                        profile["email"] = profile_email.strip()
+                        profile["department"] = profile_department
+                        profile["student_id"] = profile_student_id.strip()
+                        if profile_password.strip():
+                            profile["password"] = profile_password.strip()
+                        sync_to_disk()
+                        st.success("Profile updated.")
 
         elif student_nav == "🎮 Practice Quiz Game Studio":
             st.title("🎮 Code Quest - Interactive Quiz Arena")
