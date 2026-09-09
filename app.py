@@ -530,6 +530,11 @@ def _list_or_default(value, default):
 def _question_unit(question, index):
     return question.get("unit") or UNIT_NAMES[index % len(UNIT_NAMES)]
 
+def _student_question_unit(title, question):
+    if title in DEFAULT_QUESTIONS:
+        return "Unit 1"
+    return question.get("unit", "Unit 1")
+
 def load_db():
     if supabase is None:
         try:
@@ -1545,7 +1550,7 @@ else:
                 unit_titles = [
                     title
                     for title, question in st.session_state.questions.items()
-                    if question.get("unit", "Unit 1") == unit_name
+                    if _student_question_unit(title, question) == unit_name
                 ]
                 unit_passed = sum(
                     1
@@ -1738,11 +1743,11 @@ else:
             unit_titles = [
                 title
                 for title, question in st.session_state.questions.items()
-                if unit_number == "All Units" or question.get("unit", "Unit 1") == unit_number
+                if unit_number == "All Units" or _student_question_unit(title, question) == unit_number
             ]
             filtered_titles = [
                 t for t, q in st.session_state.questions.items()
-                if (unit_number == "All Units" or q.get("unit", "Unit 1") == unit_number)
+                if (unit_number == "All Units" or _student_question_unit(t, q) == unit_number)
                 and (selected_topic == "All" or q["topic"] == selected_topic)
             ]
 
