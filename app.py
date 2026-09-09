@@ -535,6 +535,9 @@ def _student_question_unit(title, question):
         return "Unit 1"
     return question.get("unit", "Unit 1")
 
+def _quiz_question_unit(question):
+    return question.get("unit", "Unit 1")
+
 def load_db():
     if supabase is None:
         try:
@@ -800,16 +803,24 @@ def assessment_download(title, description, content, filename):
     pdf += f"trailer<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF".encode()
     st.download_button("🖨️ Download / Print PDF", pdf, filename.replace(".html", ".pdf"), "application/pdf")
 
-def build_leaderboard_data():
+def build_leaderboard_data(unit_name="All Units"):
     leaderboard_list = []
     for u_name, data in st.session_state.users.items():
         if data["role"] == "Student":
             scores = st.session_state.student_scores.get(u_name, {})
-            passed_qs = [q for q, info in scores.items() if info.get("status") == "Passed"]
+            passed_qs = [
+                q
+                for q, info in scores.items()
+                if info.get("status") == "Passed"
+                and q in st.session_state.questions
+                and (
+                    unit_name == "All Units"
+                    or _student_question_unit(q, st.session_state.questions[q]) == unit_name
+                )
+            ]
             total_pts = sum(
                 st.session_state.questions[q].get("points", 10)
                 for q in passed_qs
-                if q in st.session_state.questions
             )
             leaderboard_list.append({
                 "Username": u_name,
@@ -829,14 +840,18 @@ def build_leaderboard_data():
         df["Rank"] = df.index + 1
     return df
 
-def render_leaderboard_view():
-    st.title("🏆 Interactive Leaderboard & Performance Hub")
+def render_leaderboard_view(unit_name="All Units"):
+    title_suffix = "" if unit_name == "All Units" else f" - {unit_name}"
+    st.title(f"🏆 Interactive Leaderboard & Performance Hub{title_suffix}")
     st.caption("Live standings, animated top performers, and export options.")
 
-    df_lb = build_leaderboard_data()
+    df_lb = build_leaderboard_data(unit_name)
 
     if df_lb.empty:
         st.info("No student activity recorded yet.")
+        return
+    if unit_name != "All Units" and df_lb["Questions Solved"].sum() == 0:
+        st.info(f"No leaderboard records are available for {unit_name} yet.")
         return
 
     # TOP 3 ANIMATED PODIUM
@@ -1490,12 +1505,14 @@ else:
                 mcq_options = st.text_input("Options (separate with |)")
                 mcq_answer = st.text_input("Correct answer")
                 mcq_explanation = st.text_area("Explanation")
+                mcq_unit = st.selectbox("Unit:", UNIT_NAMES)
                 if st.form_submit_button("➕ Publish MCQ") and mcq_question and mcq_answer:
                     options = [option.strip() for option in mcq_options.split("|") if option.strip()]
                     if mcq_answer not in options:
                         st.error("The correct answer must be one of the options.")
                     else:
                         st.session_state.quiz_questions.append({
+                            "unit": mcq_unit,
                             "question": mcq_question,
                             "options": options,
                             "answer": mcq_answer,
@@ -1534,9 +1551,20 @@ else:
     else:
         if "student_nav_override" in st.session_state:
             st.session_state.student_portal_nav = st.session_state.pop("student_nav_override")
+        selected_unit = st.session_state.get("selected_student_unit")
+        student_nav_options = ["🏠 Unit Dashboard", "👤 My Profile"]
+        if selected_unit:
+            student_nav_options = [
+                "🏠 Unit Dashboard",
+                "🎮 Practice Quiz Game Studio",
+                "📝 Assessment Coding Studio",
+                "📚 Assignments",
+                "👤 My Profile",
+                "🏆 Class Leaderboard",
+            ]
         student_nav = st.sidebar.radio(
             "🎮 Portal Navigation",
-            ["🏠 Unit Dashboard", "🎮 Practice Quiz Game Studio", "📝 Assessment Coding Studio", "📚 Assignments", "👤 My Profile", "🏆 Class Leaderboard"],
+            student_nav_options,
             key="student_portal_nav",
         )
 
@@ -1566,8 +1594,13 @@ else:
                     record_label = f"{unit_passed} solved · {unit_marks} marks"
                 else:
                     record_label = "NO RECORD"
-                if unit_name == "Unit 1":
-                    detail_label = f"Assessment: {len(st.session_state.questions)} questions · MCQ: {len(st.session_state.quiz_questions)} questions"
+                unit_quiz_questions = [
+                    quiz_question
+                    for quiz_question in st.session_state.quiz_questions
+                    if _quiz_question_unit(quiz_question) == unit_name
+                ]
+                if unit_quiz_questions:
+                    detail_label = f"Assessment: {len(unit_titles)} questions · MCQ: {len(unit_quiz_questions)} questions"
                 elif unit_passed:
                     detail_label = f"Assessment: {len(unit_titles)} questions · MCQ: NO RECORD"
                 else:
@@ -1594,23 +1627,33 @@ else:
             st.title("🎮 Code Quest - Interactive Quiz Arena")
             st.caption("Practice key ML & Python concepts in game mode before tackling graded assessments!")
 
+            unit_name = st.session_state.get("selected_student_unit", "Unit 1")
+            unit_quiz_questions = [
+                quiz_question
+                for quiz_question in st.session_state.quiz_questions
+                if _quiz_question_unit(quiz_question) == unit_name
+            ]
+            if not unit_quiz_questions:
+                st.info(f"No quiz questions are available for {unit_name} yet.")
+                st.stop()
+
             g1, g2, g3 = st.columns(3)
             with g1:
                 st.markdown(f'<div class="metric-card"><div class="metric-title">XP Points</div><div class="metric-value">⭐ {st.session_state.quiz_score}</div></div>', unsafe_allow_html=True)
             with g2:
                 st.markdown(f'<div class="metric-card"><div class="metric-title">Current Streak</div><div class="metric-value">🔥 {st.session_state.quiz_streak}x</div></div>', unsafe_allow_html=True)
             with g3:
-                progress = (st.session_state.quiz_index / len(st.session_state.quiz_questions))
+                progress = st.session_state.quiz_index / len(unit_quiz_questions)
                 st.markdown(f'<div class="metric-card"><div class="metric-title">Quiz Completion</div><div class="metric-value">{int(progress*100)}%</div></div>', unsafe_allow_html=True)
 
             st.markdown("---")
 
             quiz_is_complete = current_username in st.session_state.quiz_completed
-            if st.session_state.quiz_index < len(st.session_state.quiz_questions) and not quiz_is_complete:
-                q_curr = st.session_state.quiz_questions[st.session_state.quiz_index]
+            if st.session_state.quiz_index < len(unit_quiz_questions) and not quiz_is_complete:
+                q_curr = unit_quiz_questions[st.session_state.quiz_index]
                 
                 st.markdown('<div class="game-card">', unsafe_allow_html=True)
-                st.subheader(f"Question {st.session_state.quiz_index + 1} of {len(st.session_state.quiz_questions)}")
+                st.subheader(f"Question {st.session_state.quiz_index + 1} of {len(unit_quiz_questions)}")
                 st.markdown(f"#### {q_curr['question']}")
                 
                 user_choice = st.radio("Choose the correct answer:", q_curr["options"], key=f"q_{st.session_state.quiz_index}")
@@ -1726,7 +1769,7 @@ else:
                         st.success("Profile updated.")
 
         elif student_nav == "🏆 Class Leaderboard":
-            render_leaderboard_view()
+            render_leaderboard_view(st.session_state.get("selected_student_unit", "Unit 1"))
 
         else:
             st.title("⚡ B.Tech ML Assessment Portal")
