@@ -1326,6 +1326,7 @@ else:
         st.session_state.authenticated_user = None
         st.session_state.pop("student_portal_nav", None)
         st.session_state.pop("selected_student_unit", None)
+        st.session_state.pop("selected_trainer_unit", None)
         st.session_state.pop("assessment_unit_navigation", None)
         st.query_params.clear()
         st.rerun()
@@ -1336,7 +1337,51 @@ else:
     # ROLE A: PROFESSOR ADMIN PANEL
     # -------------------------------------------------------------
     if current_user.get("role") in ADMIN_ROLES:
-        trainer_unit = st.sidebar.selectbox("Unit Navigation", ["All Units"] + UNIT_NAMES)
+        selected_trainer_unit = st.session_state.get("selected_trainer_unit")
+        if not selected_trainer_unit:
+            st.sidebar.markdown("### 🧭 Unit Navigation")
+            st.title("👑 Professor Unit Navigation")
+            st.caption("Choose a unit to view its students, progress, and content.")
+
+            trainer_unit_columns = st.columns(3)
+            for unit_index, unit_name in enumerate(UNIT_NAMES):
+                unit_titles = [
+                    title
+                    for title, question in st.session_state.questions.items()
+                    if _student_question_unit(title, question) == unit_name
+                ]
+                solved_count = sum(
+                    1
+                    for scores in st.session_state.student_scores.values()
+                    for title, attempt in scores.items()
+                    if title in unit_titles and attempt.get("status") == "Passed"
+                )
+                unit_quiz_count = sum(
+                    1
+                    for question in st.session_state.quiz_questions
+                    if _quiz_question_unit(question) == unit_name
+                )
+                record_label = f"{solved_count} solved" if solved_count else "NO RECORD"
+                detail_label = f"Assessment: {len(unit_titles)} questions · MCQ: {unit_quiz_count} questions" if unit_titles or unit_quiz_count else "Assessment: NO RECORD · MCQ: NO RECORD"
+                podium_class = ["podium-1", "podium-2", "podium-3"][unit_index % 3]
+
+                with trainer_unit_columns[unit_index % 3]:
+                    st.markdown(
+                        f'<div class="{podium_class}"><h2>{unit_name}</h2>'
+                        f'<p style="font-size:1.35rem; font-weight:800;">{record_label}</p>'
+                        f'<small>{detail_label}</small></div>',
+                        unsafe_allow_html=True,
+                    )
+                    if st.button(f"Open {unit_name}", key=f"trainer_open_{unit_name}", use_container_width=True):
+                        st.session_state.selected_trainer_unit = unit_name
+                        st.rerun()
+            st.stop()
+
+        trainer_unit = selected_trainer_unit
+        st.sidebar.markdown(f"### 🧭 {trainer_unit} Navigation")
+        if st.sidebar.button("← Back to Unit Navigation", use_container_width=True):
+            st.session_state.pop("selected_trainer_unit", None)
+            st.rerun()
         st.title("👑 Professor Control & Analytics Panel")
 
         tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
@@ -1349,7 +1394,12 @@ else:
             students_list = [u for u, data in st.session_state.users.items() if data["role"] == "Student"]
             filter_student = st.selectbox("🎯 Filter Analytics by Student:", ["All Students"] + students_list)
 
-            total_qs = len(st.session_state.questions)
+            unit_questions = {
+                title: question
+                for title, question in st.session_state.questions.items()
+                if _student_question_unit(title, question) == trainer_unit
+            }
+            total_qs = len(unit_questions)
             total_registered = len(students_list)
 
             all_passed_count = 0
@@ -1358,8 +1408,13 @@ else:
 
             for s in students_list:
                 scores = st.session_state.student_scores.get(s, {})
-                passed = sum(1 for q in scores.values() if q.get("status") == "Passed")
-                failed = sum(1 for q in scores.values() if q.get("status") == "Failed")
+                unit_scores = {
+                    title: attempt
+                    for title, attempt in scores.items()
+                    if title in unit_questions
+                }
+                passed = sum(1 for q in unit_scores.values() if q.get("status") == "Passed")
+                failed = sum(1 for q in unit_scores.values() if q.get("status") == "Failed")
                 
                 if filter_student == "All Students" or filter_student == s:
                     all_passed_count += passed
@@ -1369,7 +1424,7 @@ else:
                     "Student": st.session_state.users[s]["name"],
                     "Solved": passed,
                     "Failed": failed,
-                    "Total Points": sum(st.session_state.questions[q]["points"] for q, inf in scores.items() if inf.get("status") == "Passed" and q in st.session_state.questions)
+                    "Total Points": sum(unit_questions[q]["points"] for q, inf in unit_scores.items() if inf.get("status") == "Passed")
                 })
 
             c1, c2, c3, c4 = st.columns(4)
@@ -1436,7 +1491,7 @@ else:
                 }
                 scores = st.session_state.student_scores.get(student, {})
 
-                for q_title, q_info in st.session_state.questions.items():
+                for q_title, q_info in unit_questions.items():
                     attempt = scores.get(q_title, {})
                     status = attempt.get("status", "Not Attempted")
                     score = attempt.get("score", 0) if status != "Not Attempted" else "-"
@@ -1454,14 +1509,14 @@ else:
                 st.info("No registered students yet.")
 
         with tab3:
-            render_leaderboard_view()
+            render_leaderboard_view(trainer_unit)
 
         with tab4:
             st.subheader("Create New Problem")
             visible_questions = {
                 title: question
                 for title, question in st.session_state.questions.items()
-                if trainer_unit == "All Units" or question.get("unit", "Unit 1") == trainer_unit
+                if _student_question_unit(title, question) == trainer_unit
             }
             st.caption(f"Showing {trainer_unit} question bank")
             with st.form("add_q_form"):
@@ -1522,7 +1577,12 @@ else:
                         st.success("MCQ published successfully.")
 
             st.markdown("#### Existing MCQ Questions")
-            for number, mcq in enumerate(st.session_state.quiz_questions, 1):
+            visible_mcqs = [
+                mcq
+                for mcq in st.session_state.quiz_questions
+                if _quiz_question_unit(mcq) == trainer_unit
+            ]
+            for number, mcq in enumerate(visible_mcqs, 1):
                 st.write(f"{number}. {mcq['question']}")
 
         with tab5:
