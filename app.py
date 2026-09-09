@@ -1676,8 +1676,14 @@ else:
                 ["All Units"] + UNIT_NAMES,
                 horizontal=True,
             )
+            st.subheader(f"📊 {unit_number} Dashboard")
             selected_topic = st.sidebar.selectbox("Filter Category:", ["All"] + sorted(topics))
 
+            unit_titles = [
+                title
+                for title, question in st.session_state.questions.items()
+                if unit_number == "All Units" or question.get("unit", "Unit 1") == unit_number
+            ]
             filtered_titles = [
                 t for t, q in st.session_state.questions.items()
                 if (unit_number == "All Units" or q.get("unit", "Unit 1") == unit_number)
@@ -1691,13 +1697,22 @@ else:
             q_data = st.session_state.questions[selected_title]
 
             user_submissions = st.session_state.student_scores.get(current_username, {})
-            solved_qs = sum(1 for q in user_submissions.values() if q.get("status") == "Passed")
+            unit_submissions = {
+                title: user_submissions.get(title, {})
+                for title in unit_titles
+            }
+            solved_qs = sum(1 for q in unit_submissions.values() if q.get("status") == "Passed")
+            unit_points = sum(
+                st.session_state.questions[title].get("points", 10)
+                for title, submission in unit_submissions.items()
+                if submission.get("status") == "Passed"
+            )
 
             c1, c2, c3 = st.columns(3)
             with c1:
-                st.markdown(f'<div class="metric-card"><div class="metric-title">Total Solved</div><div class="metric-value">{solved_qs} / {len(q_titles)}</div></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="metric-card"><div class="metric-title">Unit Problems Solved</div><div class="metric-value">{solved_qs} / {len(unit_titles)}</div></div>', unsafe_allow_html=True)
             with c2:
-                st.markdown(f'<div class="metric-card"><div class="metric-title">Points Value</div><div class="metric-value">{q_data.get("points", 10)} Pts</div></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="metric-card"><div class="metric-title">Unit Marks</div><div class="metric-value">{unit_points}</div></div>', unsafe_allow_html=True)
             with c3:
                 status_curr = user_submissions.get(selected_title, {}).get("status", "Not Solved")
                 st.markdown(f'<div class="metric-card"><div class="metric-title">Status</div><div class="metric-value" style="font-size:1.4rem;">{status_curr}</div></div>', unsafe_allow_html=True)
