@@ -635,6 +635,7 @@ def render_student_management_panel():
     with st.form(f"student_edit_form_{selected_student}"):
         new_name = st.text_input("Student Name", value=student_data.get("name", ""))
         new_email = st.text_input("Email", value=student_data.get("email", ""))
+        new_student_id = st.text_input("Student ID", value=student_data.get("student_id", ""))
         new_password = st.text_input("Password", type="password", value=student_data.get("password", ""))
         reset_scores = st.checkbox("Reset all scores and attempts for this student", value=False)
 
@@ -642,6 +643,7 @@ def render_student_management_panel():
         if submitted:
             st.session_state.users[selected_student]["name"] = new_name.strip() or student_data.get("name", "")
             st.session_state.users[selected_student]["email"] = new_email.strip() or student_data.get("email", "")
+            st.session_state.users[selected_student]["student_id"] = new_student_id.strip()
             st.session_state.users[selected_student]["password"] = new_password.strip() or student_data.get("password", "")
 
             if reset_scores:
@@ -712,9 +714,52 @@ st.session_state.quiz_progress = _mapping_or_default(db_data.get("quiz_progress"
 st.session_state.assignments = _mapping_or_default(db_data.get("assignments"), {})
 st.session_state.quiz_questions = _list_or_default(db_data.get("quiz_questions"), QUIZ_QUESTIONS.copy())
 
+def _unit_score_for_student(username, unit_name):
+    scores = st.session_state.student_scores.get(username, {})
+    return sum(
+        st.session_state.questions[title].get("points", 10)
+        for title, attempt in scores.items()
+        if attempt.get("status") == "Passed"
+        and title in st.session_state.questions
+        and _student_question_unit(title, st.session_state.questions[title]) == unit_name
+    )
+
+def _remove_duplicate_student_emails():
+    students_by_email = {}
+    for username, user_data in st.session_state.users.items():
+        if user_data.get("role") != "Student":
+            continue
+        email = user_data.get("email", "").strip().casefold()
+        if email:
+            students_by_email.setdefault(email, []).append(username)
+
+    removed_usernames = []
+    for usernames in students_by_email.values():
+        if len(usernames) < 2:
+            continue
+        keeper = max(
+            usernames,
+            key=lambda username: (
+                _unit_score_for_student(username, "Unit 1"),
+                len(st.session_state.student_scores.get(username, {})),
+            ),
+        )
+        for username in usernames:
+            if username == keeper:
+                continue
+            removed_usernames.append(username)
+            del st.session_state.users[username]
+            st.session_state.student_scores.pop(username, None)
+
+    if removed_usernames:
+        sync_to_disk()
+    return removed_usernames
+
 for username, user_data in st.session_state.users.items():
     user_data.setdefault("department", "")
     user_data.setdefault("student_id", "")
+
+_remove_duplicate_student_emails()
 
 if "authenticated_user" not in st.session_state:
     st.session_state.authenticated_user = _restore_authenticated_user(st.session_state.users)
@@ -825,11 +870,21 @@ def build_leaderboard_data(unit_name="All Units"):
             leaderboard_list.append({
                 "Username": u_name,
                 "Student Name": data["name"],
+                "Student ID": data.get("student_id", ""),
                 "Email": data["email"],
                 "Questions Solved": len(passed_qs),
                 "Total Points": total_pts,
                 "Completion Time": min(
-                    (info.get("completed_at", "9999") for info in scores.values() if info.get("status") == "Passed"),
+                    (
+                        info.get("completed_at", "9999")
+                        for question, info in scores.items()
+                        if info.get("status") == "Passed"
+                        and question in st.session_state.questions
+                        and (
+                            unit_name == "All Units"
+                            or _student_question_unit(question, st.session_state.questions[question]) == unit_name
+                        )
+                    ),
                     default="9999",
                 ),
             })
@@ -965,7 +1020,7 @@ def render_leaderboard_view(unit_name="All Units"):
 
     st.markdown("#### 📋 Leaderboard Table")
     st.dataframe(
-        filtered_df[["Rank", "Student Name", "Email", "Questions Solved", "Total Points"]],
+        filtered_df[["Rank", "Student Name", "Student ID", "Email", "Questions Solved", "Total Points"]],
         use_container_width=True,
     )
 
@@ -976,6 +1031,18 @@ def render_leaderboard_view(unit_name="All Units"):
         file_name="leaderboard_report.csv",
         mime="text/csv",
         type="primary",
+    )
+
+    report_lines = [
+        f"{row['Rank']}. {row['Student Name']} | Student ID: {row['Student ID']} | "
+        f"Email: {row['Email']} | Solved: {row['Questions Solved']} | Points: {row['Total Points']}"
+        for _, row in filtered_df.iterrows()
+    ]
+    assessment_download(
+        f"{unit_name} Leaderboard Report",
+        "Student leaderboard details",
+        "\n".join(report_lines),
+        "leaderboard_report.html",
     )
 
 # ==========================================
@@ -1088,7 +1155,7 @@ def render_login_screen():
                     ):
                         st.error("⚠️ Username already taken! Please choose another.")
                     elif any(
-                        user.get("email", "").casefold() == new_email.strip().casefold()
+                        user.get("email", "").strip().casefold() == new_email.strip().casefold()
                         for user in st.session_state.users.values()
                     ):
                         st.error("⚠️ This email is already registered. One email can have only one account.")
@@ -1484,6 +1551,7 @@ else:
                 user_info = st.session_state.users[student]
                 s_data = {
                     "Student Name": user_info["name"],
+                    "Student ID": user_info.get("student_id", ""),
                     "Email": user_info["email"],
                     "Username": student,
                     "Total Score": 0,
