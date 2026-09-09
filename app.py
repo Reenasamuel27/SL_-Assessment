@@ -1552,23 +1552,29 @@ else:
         if "student_nav_override" in st.session_state:
             st.session_state.student_portal_nav = st.session_state.pop("student_nav_override")
         selected_unit = st.session_state.get("selected_student_unit")
-        student_nav_options = ["🏠 Unit Dashboard", "👤 My Profile"]
+        student_nav_options = ["🧭 Unit Navigation"]
         if selected_unit:
             student_nav_options = [
-                "🏠 Unit Dashboard",
                 "🎮 Practice Quiz Game Studio",
                 "📝 Assessment Coding Studio",
                 "📚 Assignments",
-                "👤 My Profile",
                 "🏆 Class Leaderboard",
             ]
+        if st.session_state.get("student_portal_nav") not in student_nav_options:
+            st.session_state.student_portal_nav = student_nav_options[0]
         student_nav = st.sidebar.radio(
             "🎮 Portal Navigation",
             student_nav_options,
             key="student_portal_nav",
         )
 
-        if student_nav == "🏠 Unit Dashboard":
+        if selected_unit and student_nav != "🧭 Unit Navigation":
+            if st.button("← Back to Unit Navigation", type="secondary"):
+                st.session_state.pop("selected_student_unit", None)
+                st.session_state.student_nav_override = "🧭 Unit Navigation"
+                st.rerun()
+
+        if student_nav == "🧭 Unit Navigation":
             st.title("⚡ B.Tech ML Learning Dashboard")
             st.caption("Choose a unit to view its progress and continue your assessment.")
 
@@ -1618,10 +1624,6 @@ else:
                         st.session_state.selected_student_unit = unit_name
                         st.session_state.student_nav_override = "📝 Assessment Coding Studio"
                         st.rerun()
-
-            selected_unit = st.session_state.get("selected_student_unit")
-            if selected_unit:
-                st.info(f"Current unit: {selected_unit}. Use the sidebar to return to this dashboard.")
 
         elif student_nav == "🎮 Practice Quiz Game Studio":
             st.title("🎮 Code Quest - Interactive Quiz Arena")
@@ -1737,46 +1739,11 @@ else:
                         st.success("Assignment passed and recorded." if passed else "Assignment failed. Review the output and try again.")
                     assessment_download(assignment_title, assignment.get("description", ""), assignment_code, f"{assignment_title}.html")
 
-        elif student_nav == "👤 My Profile":
-            st.title("👤 My Profile")
-            profile = st.session_state.users[current_username]
-            with st.form("student_profile_form"):
-                profile_name = st.text_input("Full Name", value=profile.get("name", ""))
-                profile_email = st.text_input("Email", value=profile.get("email", ""))
-                department_options = ["", "Computer Science", "Information Technology", "Electronics", "Mechanical", "Other"]
-                profile_department = st.selectbox("Department", department_options, index=department_options.index(profile.get("department", "")) if profile.get("department", "") in department_options else 0)
-                profile_student_id = st.text_input("Student ID", value=profile.get("student_id", ""))
-                profile_password = st.text_input("New Password", type="password")
-                if st.form_submit_button("Save Profile"):
-                    normalized_email = profile_email.strip().casefold()
-                    duplicate_email = any(
-                        username != current_username
-                        and user.get("email", "").strip().casefold() == normalized_email
-                        for username, user in st.session_state.users.items()
-                    )
-                    if not normalized_email or "@" not in normalized_email:
-                        st.error("Please enter a valid email address.")
-                    elif duplicate_email:
-                        st.error("This email is already registered to another account.")
-                    else:
-                        profile["name"] = profile_name.strip() or profile.get("name", "")
-                        profile["email"] = profile_email.strip()
-                        profile["department"] = profile_department
-                        profile["student_id"] = profile_student_id.strip()
-                        if profile_password.strip():
-                            profile["password"] = profile_password.strip()
-                        sync_to_disk()
-                        st.success("Profile updated.")
-
         elif student_nav == "🏆 Class Leaderboard":
             render_leaderboard_view(st.session_state.get("selected_student_unit", "Unit 1"))
 
         else:
             st.title("⚡ B.Tech ML Assessment Portal")
-
-            if st.button("← Back to Unit Dashboard", type="secondary"):
-                st.session_state.student_nav_override = "🏠 Unit Dashboard"
-                st.rerun()
 
             topics = list(set(q["topic"] for q in st.session_state.questions.values()))
             unit_number = st.session_state.get("selected_student_unit", "All Units")
