@@ -2061,6 +2061,63 @@ else:
                     sync_to_disk()
                     st.success("Assignment published successfully.")
 
+            st.markdown("#### Existing Assignments")
+            if not st.session_state.assignments:
+                st.info("No assignments have been published yet.")
+            for assignment_title, assignment in list(st.session_state.assignments.items()):
+                with st.expander(assignment_title):
+                    with st.form(f"edit_assignment_form_{assignment_title}"):
+                        edited_assignment_title = st.text_input(
+                            "Assignment title",
+                            value=assignment_title,
+                        )
+                        edited_assignment_description = st.text_area(
+                            "Assignment description",
+                            value=assignment.get("description", ""),
+                        )
+                        edited_assignment_starter = st.text_area(
+                            "Starter code",
+                            value=assignment.get("starter_code", "# Write your solution here\n"),
+                        )
+                        if st.form_submit_button("💾 Save Assignment Changes"):
+                            normalized_title = edited_assignment_title.strip()
+                            duplicate_title = (
+                                normalized_title != assignment_title
+                                and normalized_title in st.session_state.assignments
+                            )
+                            if not normalized_title:
+                                st.error("Assignment title cannot be empty.")
+                            elif duplicate_title:
+                                st.error("An assignment with this title already exists.")
+                            else:
+                                updated_assignment = {
+                                    "description": edited_assignment_description,
+                                    "starter_code": edited_assignment_starter,
+                                }
+                                if normalized_title != assignment_title:
+                                    st.session_state.assignments.pop(assignment_title)
+                                st.session_state.assignments[normalized_title] = updated_assignment
+                                sync_to_disk()
+                                st.success("Assignment updated successfully.")
+                                st.rerun()
+
+                    confirm_delete_assignment = st.checkbox(
+                        "Confirm delete this assignment",
+                        key=f"confirm_delete_assignment_{assignment_title}",
+                    )
+                    if st.button(
+                        "🗑 Delete Assignment",
+                        key=f"delete_assignment_{assignment_title}",
+                        type="secondary",
+                    ):
+                        if confirm_delete_assignment:
+                            st.session_state.assignments.pop(assignment_title, None)
+                            sync_to_disk()
+                            st.success("Assignment deleted successfully.")
+                            st.rerun()
+                        else:
+                            st.warning("Confirm deletion before removing this assignment.")
+
     # -------------------------------------------------------------
     # ROLE B: STUDENT PORTAL
     # -------------------------------------------------------------
