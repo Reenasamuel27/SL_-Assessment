@@ -32,14 +32,6 @@
       "department": "",
       "student_id": ""
     },
-    "jay": {
-      "password": "Jay@123",
-      "role": "Student",
-      "name": "Jay",
-      "email": "abc@gmail.com",
-      "department": "",
-      "student_id": ""
-    },
     "jay1": {
       "password": "jay123",
       "role": "Student",
@@ -67,7 +59,6 @@
       }
     },
     "Reena_Samuel": {},
-    "jay": {},
     "Reena_samuel": {},
     "jay1": {}
   },
@@ -572,6 +563,8 @@
     }
   },
   "quiz_attempts": {},
+  "quiz_completed": {},
+  "quiz_progress": {},
   "assignments": {},
   "quiz_questions": [
     {
@@ -849,6 +842,5 @@
       "answer": "Silhouette Score",
       "explanation": "The Silhouette Score measures how well data points fit within their assigned clusters."
     }
-  ],
-  "quiz_completed": {}
+  ]
 }
