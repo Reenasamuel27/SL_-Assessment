@@ -2205,7 +2205,7 @@ else:
             with st.form("student_profile_form"):
                 profile_name = st.text_input("Full Name", value=profile.get("name", ""))
                 profile_email = st.text_input("Email", value=profile.get("email", ""))
-                department_options = ["AIML-E"]
+                department_options = ["AIML-E", ""]
                 profile_department = st.selectbox("Department", department_options, index=department_options.index(profile.get("department", "")) if profile.get("department", "") in department_options else 0)
                 profile_student_id = st.text_input("Student ID", value=profile.get("student_id", ""))
                 profile_password = st.text_input("New Password", type="password")
