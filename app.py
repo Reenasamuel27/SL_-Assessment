@@ -1347,7 +1347,7 @@ def render_login_screen():
             with st.form("form_register"):
                 new_name = st.text_input("Full Name *")
                 new_email = st.text_input("Email Address *")
-                new_department = st.selectbox("Department", ["", "Computer Science", "Information Technology", "Electronics", "Mechanical", "Other"])
+                new_department = st.selectbox("Department", ["AIML-E"])
                 new_student_id = st.text_input("Student ID")
                 new_username = st.text_input("Choose Username *").strip()
                 new_password = st.text_input("Choose Password *", type="password")
@@ -2205,7 +2205,7 @@ else:
             with st.form("student_profile_form"):
                 profile_name = st.text_input("Full Name", value=profile.get("name", ""))
                 profile_email = st.text_input("Email", value=profile.get("email", ""))
-                department_options = ["", "Computer Science", "Information Technology", "Electronics", "Mechanical", "Other"]
+                department_options = ["AIML-E"]
                 profile_department = st.selectbox("Department", department_options, index=department_options.index(profile.get("department", "")) if profile.get("department", "") in department_options else 0)
                 profile_student_id = st.text_input("Student ID", value=profile.get("student_id", ""))
                 profile_password = st.text_input("New Password", type="password")
