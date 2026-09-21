@@ -4,6 +4,7 @@ import hmac
 import json
 import os
 import random
+import re
 import sys
 import tempfile
 import traceback
@@ -884,6 +885,26 @@ def build_mcq_response_sheet(unit_name="All Units"):
     return pd.DataFrame(rows)
 
 def _mcq_completion_time(username, unit_name, attempts, question_count):
+    answered_questions = {
+        attempt.get("question")
+        for attempt in attempts
+        if attempt.get("question") and (
+            unit_name == "All Units" or attempt.get("unit", "Unit 1") == unit_name
+        )
+    }
+    if not question_count or len(answered_questions) < question_count:
+        return ""
+
+    answered_times = [
+        attempt.get("answered_at", "")
+        for attempt in attempts
+        if attempt.get("answered_at") and (
+            unit_name == "All Units" or attempt.get("unit", "Unit 1") == unit_name
+        )
+    ]
+    if answered_times:
+        return max(answered_times)
+
     saved_times = st.session_state.get("quiz_completion_times", {}).get(username, {})
     if isinstance(saved_times, dict):
         completion_time = saved_times.get(unit_name, "")
@@ -894,22 +915,6 @@ def _mcq_completion_time(username, unit_name, attempts, question_count):
     if not completion_time and unit_name == "Unit 1" and isinstance(legacy_completion, str):
         completion_time = legacy_completion
 
-    answered_questions = {
-        attempt.get("question")
-        for attempt in attempts
-        if attempt.get("question") and (
-            unit_name == "All Units" or attempt.get("unit", "Unit 1") == unit_name
-        )
-    }
-    if not completion_time and question_count and len(answered_questions) >= question_count:
-        answered_times = [
-            attempt.get("answered_at", "")
-            for attempt in attempts
-            if attempt.get("answered_at") and (
-                unit_name == "All Units" or attempt.get("unit", "Unit 1") == unit_name
-            )
-        ]
-        completion_time = max(answered_times, default="")
     return completion_time
 
 def _format_mcq_submission_time(timestamp):
@@ -923,6 +928,78 @@ def _format_mcq_submission_time(timestamp):
     except (TypeError, ValueError):
         return str(timestamp)
 
+def _parse_mcq_options(option_text):
+    options = []
+    for line in option_text.splitlines():
+        option = line.strip()
+        if not option:
+            continue
+        option = re.sub(r"^(?:[A-Za-z]|\d+)[.)]\s*", "", option)
+        options.append(option.strip())
+    return options
+
+def _format_mcq_response(question, selected_answer):
+    if not selected_answer:
+        return ""
+    options = question.get("options", [])
+    try:
+        option_index = [str(option).casefold() for option in options].index(
+            str(selected_answer).casefold()
+        )
+    except ValueError:
+        return str(selected_answer)
+    return f"{chr(ord('a') + option_index)}) {selected_answer}"
+
+def build_google_form_mcq_response_sheet(unit_name="All Units"):
+    questions = [
+        question for question in st.session_state.quiz_questions
+        if unit_name == "All Units" or _quiz_question_unit(question) == unit_name
+    ]
+    question_by_text = {
+        question.get("question", ""): question for question in questions
+    }
+    question_columns = [question.get("question", "") for question in questions]
+    rows = []
+    for username, user_data in st.session_state.users.items():
+        if user_data.get("role") != "Student":
+            continue
+        attempts = [
+            attempt for attempt in st.session_state.get("quiz_attempts", {}).get(username, [])
+            if unit_name == "All Units" or attempt.get("unit", "Unit 1") == unit_name
+        ]
+        latest_attempts = {
+            attempt.get("question", ""): attempt for attempt in attempts
+        }
+        if not latest_attempts:
+            continue
+        timestamps = [
+            attempt.get("answered_at", "") for attempt in latest_attempts.values()
+            if attempt.get("answered_at")
+        ]
+        total_points = sum(
+            int(question_by_text.get(question_text, {}).get("points", 0))
+            for question_text, attempt in latest_attempts.items()
+            if attempt.get("correct") and question_text in question_by_text
+        )
+        maximum_points = sum(int(question.get("points", 0)) for question in questions)
+        row = {
+            "Timestamp": _format_mcq_submission_time(max(timestamps, default="")),
+            "Email address": user_data.get("email", ""),
+            "Score": f"{total_points} / {maximum_points}",
+            "Name": user_data.get("name", username),
+            "department": user_data.get("department", ""),
+        }
+        for question in questions:
+            question_text = question.get("question", "")
+            attempt = latest_attempts.get(question_text, {})
+            row[question_text] = _format_mcq_response(
+                question, attempt.get("selected_answer", "")
+            )
+        rows.append(row)
+    return pd.DataFrame(rows, columns=[
+        "Timestamp", "Email address", "Score", "Name", "department", *question_columns
+    ])
+
 def build_mcq_leaderboard_data(unit_name="All Units"):
     unit_questions = [
         question for question in st.session_state.quiz_questions
@@ -930,6 +1007,9 @@ def build_mcq_leaderboard_data(unit_name="All Units"):
     ]
     question_count = len(unit_questions)
     maximum_points = sum(int(question.get("points", 0)) for question in unit_questions)
+    question_by_text = {
+        question.get("question", ""): question for question in unit_questions
+    }
     leaderboard_list = []
 
     for username, user_data in st.session_state.users.items():
@@ -942,7 +1022,11 @@ def build_mcq_leaderboard_data(unit_name="All Units"):
         latest_attempts = {}
         for attempt in attempts:
             latest_attempts[attempt.get("question", "")] = attempt
-        total_points = sum(int(attempt.get("points", 0)) for attempt in latest_attempts.values())
+        total_points = sum(
+            int(question_by_text.get(question_text, {}).get("points", 0))
+            for question_text, attempt in latest_attempts.items()
+            if attempt.get("correct") and question_text in question_by_text
+        )
         completion_time = _mcq_completion_time(username, unit_name, attempts, question_count)
         leaderboard_list.append({
             "Username": username,
@@ -1036,13 +1120,14 @@ def render_student_mcq_leaderboard_view(username, unit_name="Unit 1"):
     for question_number, question in enumerate(unit_questions, 1):
         question_text = question.get("question", "")
         attempt = latest_attempts.get(question_text, {})
+        has_attempt = bool(attempt)
         response_rows.append({
             "Question Number": question_number,
             "Question": question_text,
-            "Correct Answer": attempt.get("correct_answer", question.get("answer", "")),
+            "Correct Answer": attempt.get("correct_answer", "") if has_attempt else "Not Answered",
             "Response Answer": attempt.get("selected_answer", "Not Answered"),
             "Correct": "YES" if attempt.get("correct") else "NO",
-            "Points": int(attempt.get("points", 0)),
+            "Points": int(question.get("points", 0)) if attempt.get("correct") else 0,
         })
 
     st.markdown("#### 📋 My MCQ Assessment Details")
@@ -1876,26 +1961,38 @@ else:
             with st.form("add_mcq_form"):
                 mcq_question = st.text_area("Question", placeholder="Type the question students should answer")
                 mcq_description = st.text_area("Description / help text", placeholder="Optional instructions shown below the question")
-                option_values = [
-                    st.text_input(f"Option {option_number}", key=f"new_mcq_option_{option_number}")
-                    for option_number in range(1, 5)
-                ]
-                mcq_options = [option.strip() for option in option_values if option.strip()]
-                mcq_correct_number = st.selectbox("Correct option number", [1, 2, 3, 4])
-                mcq_points = st.number_input("Points", min_value=0, value=10, step=1)
+                mcq_option_text = st.text_area(
+                    "Options (one per line)",
+                    placeholder="a) First option\nb) Second option\nc) Third option\nd) Fourth option",
+                )
+                mcq_options = _parse_mcq_options(mcq_option_text)
+                mcq_correct_answer = st.text_input(
+                    "Correct answer",
+                    placeholder="Type the exact correct option text",
+                )
+                mcq_points = st.number_input("Points", min_value=0, value=0, step=1)
                 mcq_required = st.checkbox("Required question", value=True)
                 mcq_shuffle = st.checkbox("Shuffle options for each student", value=True)
                 mcq_one_response = st.checkbox("Limit students to one response", value=True)
                 mcq_explanation = st.text_area("Explanation shown after submission")
-                mcq_unit = st.selectbox("Unit:", UNIT_NAMES)
+                mcq_unit = st.selectbox(
+                    "Unit:",
+                    UNIT_NAMES,
+                    index=UNIT_NAMES.index(trainer_unit) if trainer_unit in UNIT_NAMES else 0,
+                )
                 if st.form_submit_button("➕ Publish MCQ"):
                     normalized_options = [option.casefold() for option in mcq_options]
+                    correct_answer_index = (
+                        normalized_options.index(mcq_correct_answer.strip().casefold())
+                        if mcq_correct_answer.strip().casefold() in normalized_options
+                        else -1
+                    )
                     if not mcq_question.strip():
                         st.error("Add a question before publishing.")
                     elif len(mcq_options) < 2:
                         st.error("Add at least two answer choices.")
-                    elif mcq_correct_number > len(mcq_options):
-                        st.error("Choose a correct option that has text.")
+                    elif correct_answer_index < 0:
+                        st.error("Enter the correct answer exactly as one of the options.")
                     elif len(set(normalized_options)) != len(mcq_options):
                         st.error("Answer choices must be unique.")
                     else:
@@ -1904,7 +2001,7 @@ else:
                             "question": mcq_question.strip(),
                             "description": mcq_description.strip(),
                             "options": mcq_options,
-                            "answer": mcq_options[mcq_correct_number - 1],
+                            "answer": mcq_options[correct_answer_index],
                             "points": int(mcq_points),
                             "required": mcq_required,
                             "shuffle_options": mcq_shuffle,
@@ -1934,23 +2031,15 @@ else:
                             key=f"edit_mcq_description_{mcq_index}",
                         )
                         current_options = list(mcq.get("options", []))
-                        edited_mcq_options = [
-                            st.text_input(
-                                f"Option {option_number}",
-                                value=current_options[option_number - 1] if option_number <= len(current_options) else "",
-                                key=f"edit_mcq_option_{mcq_index}_{option_number}",
-                            ).strip()
-                            for option_number in range(1, 5)
-                        ]
-                        edited_mcq_options = [option for option in edited_mcq_options if option]
-                        current_answer_index = (
-                            current_options.index(mcq.get("answer")) + 1
-                            if mcq.get("answer") in current_options else 1
+                        edited_mcq_option_text = st.text_area(
+                            "Options (one per line)",
+                            value="\n".join(current_options),
+                            key=f"edit_mcq_options_{mcq_index}",
                         )
-                        edited_answer_number = st.selectbox(
-                            "Correct option number",
-                            [1, 2, 3, 4],
-                            index=current_answer_index - 1 if current_answer_index <= 4 else 0,
+                        edited_mcq_options = _parse_mcq_options(edited_mcq_option_text)
+                        edited_mcq_correct_answer = st.text_input(
+                            "Correct answer",
+                            value=mcq.get("answer", ""),
                             key=f"edit_mcq_answer_{mcq_index}",
                         )
                         edited_mcq_unit = st.selectbox(
@@ -1963,7 +2052,7 @@ else:
                         edited_mcq_points = st.number_input(
                             "Points",
                             min_value=0,
-                            value=int(mcq.get("points", 10)),
+                            value=int(mcq.get("points", 0)),
                             step=1,
                             key=f"edit_mcq_points_{mcq_index}",
                         )
@@ -1989,12 +2078,17 @@ else:
                         )
                         if st.form_submit_button("💾 Save MCQ Changes"):
                             normalized_options = [option.casefold() for option in edited_mcq_options]
+                            correct_answer_index = (
+                                normalized_options.index(edited_mcq_correct_answer.strip().casefold())
+                                if edited_mcq_correct_answer.strip().casefold() in normalized_options
+                                else -1
+                            )
                             if not edited_mcq_question.strip():
                                 st.error("Add a question before saving.")
                             elif len(edited_mcq_options) < 2:
                                 st.error("Add at least two answer choices.")
-                            elif edited_answer_number > len(edited_mcq_options):
-                                st.error("Choose a correct option that has text.")
+                            elif correct_answer_index < 0:
+                                st.error("Enter the correct answer exactly as one of the options.")
                             elif len(set(normalized_options)) != len(edited_mcq_options):
                                 st.error("Answer choices must be unique.")
                             else:
@@ -2004,7 +2098,7 @@ else:
                                     "question": edited_mcq_question.strip(),
                                     "description": edited_mcq_description.strip(),
                                     "options": edited_mcq_options,
-                                    "answer": edited_mcq_options[edited_answer_number - 1],
+                                    "answer": edited_mcq_options[correct_answer_index],
                                     "points": int(edited_mcq_points),
                                     "required": edited_mcq_required,
                                     "shuffle_options": edited_mcq_shuffle,
@@ -2032,11 +2126,11 @@ else:
                             st.warning("Confirm deletion before removing this MCQ.")
 
             st.markdown("#### Student Responses")
-            response_sheet = build_mcq_response_sheet(trainer_unit)
+            response_sheet = build_google_form_mcq_response_sheet(trainer_unit)
             if response_sheet.empty:
                 st.info(f"No MCQ responses have been submitted for {trainer_unit} yet.")
             else:
-                st.dataframe(response_sheet, use_container_width=True)
+                st.dataframe(response_sheet, use_container_width=True, hide_index=True)
                 st.download_button(
                     "📥 Download Student Responses (CSV)",
                     response_sheet.to_csv(index=False).encode("utf-8"),
@@ -2252,6 +2346,9 @@ else:
             latest_attempts = {
                 attempt.get("question", ""): attempt
                 for attempt in student_attempts
+                if attempt.get("question", "") in {
+                    question.get("question", "") for question in unit_quiz_questions
+                }
             }
             unanswered_questions = [
                 question
@@ -2259,7 +2356,17 @@ else:
                 if question.get("question", "") not in latest_attempts
             ]
             answered_count = len(latest_attempts)
-            current_score = sum(int(attempt.get("points", 0)) for attempt in latest_attempts.values())
+            question_by_text = {
+                question.get("question", ""): question for question in unit_quiz_questions
+            }
+            current_score = sum(
+                int(question_by_text[question_text].get("points", 0))
+                for question_text, attempt in latest_attempts.items()
+                if attempt.get("correct")
+            )
+            st.session_state.quiz_score = current_score
+            if not latest_attempts:
+                st.session_state.quiz_streak = 0
 
             g1, g2, g3 = st.columns(3)
             with g1:
@@ -2267,7 +2374,7 @@ else:
             with g2:
                 st.markdown(f'<div class="metric-card"><div class="metric-title">Current Streak</div><div class="metric-value">🔥 {st.session_state.quiz_streak}x</div></div>', unsafe_allow_html=True)
             with g3:
-                progress = answered_count / len(unit_quiz_questions)
+                progress = min(answered_count / len(unit_quiz_questions), 1)
                 st.markdown(f'<div class="metric-card"><div class="metric-title">Quiz Completion</div><div class="metric-value">{int(progress*100)}%</div></div>', unsafe_allow_html=True)
 
             st.markdown("---")
@@ -2303,13 +2410,13 @@ else:
                         st.session_state.quiz_attempts.setdefault(current_username, []).append(quiz_attempt)
                         if question_number == len(unit_quiz_questions):
                             st.session_state.quiz_completed[current_username] = quiz_attempt["answered_at"]
-                            st.session_state.quiz_completion_times.setdefault(current_username, {}).setdefault(
-                                unit_name, quiz_attempt["answered_at"]
-                            )
+                            st.session_state.quiz_completion_times.setdefault(current_username, {})[
+                                unit_name
+                            ] = quiz_attempt["answered_at"]
                         if user_choice == q_curr["answer"]:
                             st.session_state.quiz_streak += 1
                             pts_gained = 10 * st.session_state.quiz_streak
-                            st.session_state.quiz_score += pts_gained
+                            st.session_state.quiz_score = current_score + int(q_curr.get("points", 0))
                             st.success(f"🎉 Correct! +{pts_gained} XP (Streak: {st.session_state.quiz_streak}x)")
                             st.info(f"💡 Explanation: {q_curr['explanation']}")
                             st.balloons()
