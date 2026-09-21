@@ -560,7 +560,21 @@
       ],
       "starter_code": "from sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_squared_error\n\nn = int(input())\nX = []\ny = []\n\nfor _ in range(n):\n    size, price = map(int, input().split())\n    X.append([size])\n    y.append(price)\n\n# Read test house size\ntest_size = int(input())\n\n# Train the model\n\n# Predict the price\n\n# Predict on training data\n\n# Calculate MSE\n\n# Print predicted price and MSE\n",
       "unit": "Unit 1"
+    },
+    "Q37. Ridge Regression MSE, MAE and R-Square": {
+      "unit": "Unit 2",
+      "topic": "Bonus ML-Oriented",
+      "points": 20,
+      "description": "Use the Area values as the feature and Price values as the target. Train a Ridge regression model with alpha=1.0, predict the prices for the same dataset, calculate the Mean Squared Error (MSE), Mean Absolute Error (MAE), and R-squared value using sklearn metrics, and print each rounded to 4 decimal places.\n\nInput format:\n- The first line contains N.\n- The next N lines contain Area, Bedrooms, and Price.\n\nThe Bedrooms column is provided as part of the dataset but is not used for this task. Print the results in the format `MSE: 0.1234`, `MAE: 0.1234`, and `R_Square: 0.9980`, each on a new line.",
+      "inputs": [
+        "10\n800 2 40\n900 2 45\n1000 2 50\n1100 3 58\n1200 3 63\n1300 3 68\n1400 3 74\n1500 4 82\n1600 4 87\n1700 4 93"
+      ],
+      "expected_outputs": [
+        "MSE: 0.5891\nMAE: 0.6327\nR_Square: 0.9980"
+      ],
+      "starter_code": "from sklearn.linear_model import Ridge\nfrom sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score\n\nn = int(input())\nX = []\ny = []\n\nfor _ in range(n):\n    area, bedrooms, price = map(float, input().split())\n    X.append([area])\n    y.append(price)\n\nmodel = Ridge(alpha=1.0)\nmodel.fit(X, y)\npredictions = model.predict(X)\n\n# Calculate MSE, MAE, and R-squared\n\n# Print each metric rounded to 4 decimal places\n"
     }
+    
   },
   "quiz_attempts": {},
   "quiz_completed": {},

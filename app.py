@@ -8,6 +8,7 @@ import re
 import sys
 import tempfile
 import traceback
+import uuid
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 import pandas as pd
@@ -350,6 +351,17 @@ DEFAULT_QUESTIONS = {
         ],
         "starter_code": "from sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_squared_error\n\nn = int(input())\nX = []\ny = []\n\nfor _ in range(n):\n    size, price = map(int, input().split())\n    X.append([size])\n    y.append(price)\n\n# Read test house size\ntest_size = int(input())\n\n# Train the model\n\n# Predict the price\n\n# Predict on training data\n\n# Calculate MSE\n\n# Print predicted price and MSE\n"
 },
+    "Q37. Ridge Regression MSE, MAE and R-Square": {
+        "unit": "Unit 2",
+        "topic": "Bonus ML-Oriented",
+        "points": 20,
+        "description": "Use the Area values as the feature and Price values as the target. Train a Ridge regression model with alpha=1.0, predict the prices for the same dataset, calculate the Mean Squared Error (MSE), Mean Absolute Error (MAE), and R-squared value using sklearn metrics, and print each rounded to 4 decimal places.\n\nInput format:\n- The first line contains N.\n- The next N lines contain Area, Bedrooms, and Price.\n\nThe Bedrooms column is provided as part of the dataset but is not used for this task. Print the results in the format `MSE: 0.1234`, `MAE: 0.1234`, and `R_Square: 0.9980`, each on a new line.",
+        "inputs": [
+            "10\n800 2 40\n900 2 45\n1000 2 50\n1100 3 58\n1200 3 63\n1300 3 68\n1400 3 74\n1500 4 82\n1600 4 87\n1700 4 93"
+        ],
+        "expected_outputs": ["MSE: 0.5891\nMAE: 0.6327\nR_Square: 0.9980"],
+        "starter_code": "from sklearn.linear_model import Ridge\nfrom sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score\n\nn = int(input())\nX = []\ny = []\n\nfor _ in range(n):\n    area, bedrooms, price = map(float, input().split())\n    X.append([area])\n    y.append(price)\n\nmodel = Ridge(alpha=1.0)\nmodel.fit(X, y)\npredictions = model.predict(X)\n\n# Calculate MSE, MAE, and R-squared\n\n# Print each metric rounded to 4 decimal placesn"
+    },
 }
 
 QUIZ_QUESTIONS = [
@@ -536,6 +548,8 @@ def _question_unit(question, index):
     return question.get("unit") or UNIT_NAMES[index % len(UNIT_NAMES)]
 
 def _student_question_unit(title, question):
+    if title == "Q37. Ridge Regression MSE, MAE and R-Square":
+        return "Unit 2"
     if title in DEFAULT_QUESTIONS:
         return "Unit 1"
     return question.get("unit", "Unit 1")
@@ -576,6 +590,43 @@ def load_db():
     data["quiz_progress"] = _mapping_or_default(data.get("quiz_progress"), {})
     data["assignments"] = _mapping_or_default(data.get("assignments"), {})
     data["quiz_questions"] = _list_or_default(data.get("quiz_questions"), QUIZ_QUESTIONS.copy())
+
+    mcq_ids_changed = False
+    question_ids_by_text = {}
+    for quiz_question in data["quiz_questions"]:
+        question_id = quiz_question.get("mcq_id")
+        if not question_id:
+            question_id = uuid.uuid4().hex
+            quiz_question["mcq_id"] = question_id
+            mcq_ids_changed = True
+        question_ids_by_text.setdefault(quiz_question.get("question", ""), []).append(question_id)
+
+    attempts_changed = False
+    for attempts in data["quiz_attempts"].values():
+        for attempt in attempts:
+            if attempt.get("mcq_id"):
+                continue
+            matching_ids = question_ids_by_text.get(attempt.get("question", ""), [])
+            if matching_ids:
+                attempt["mcq_id"] = matching_ids[0]
+                attempts_changed = True
+
+    if mcq_ids_changed or attempts_changed:
+        save_db_data(data)
+
+    ridge_title = "Q37. Ridge Regression MSE, MAE and R-Square"
+    new_question = DEFAULT_QUESTIONS[ridge_title]
+    if ridge_title not in data["questions"]:
+        data["questions"][ridge_title] = new_question.copy()
+        save_db_data(data)
+    else:
+        ridge_question = data["questions"][ridge_title]
+        if ridge_question.get("unit") != "Unit 2":
+            ridge_question["unit"] = "Unit 2"
+            save_db_data(data)
+        elif ridge_question.get("topic") == "Machine Learning Regression":
+            ridge_question["topic"] = "Bonus ML-Oriented"
+            save_db_data(data)
 
     # Keep code-defined default accounts up to date in the persisted state.
     defaults_changed = False
@@ -806,6 +857,13 @@ def restrict_clipboard(element_id):
 # 2. CODE EXECUTION & LEADERBOARD HELPERS
 # ==========================================
 def evaluate_script(user_code, test_inputs, expected_outputs):
+    def normalize_decimal_format(output):
+        return re.sub(
+            r"-?\d+\.\d+",
+            lambda match: match.group().rstrip("0").rstrip("."),
+            output,
+        )
+
     results = []
     for test_in, expected_out in zip(test_inputs, expected_outputs):
         sys.stdin = io.StringIO(test_in)
@@ -815,7 +873,8 @@ def evaluate_script(user_code, test_inputs, expected_outputs):
         try:
             exec(user_code, {})
             actual_out = captured_output.getvalue().strip()
-            if actual_out == str(expected_out).strip():
+            expected_text = str(expected_out).strip()
+            if normalize_decimal_format(actual_out) == normalize_decimal_format(expected_text):
                 results.append((True, test_in, expected_out, actual_out))
             else:
                 results.append((False, test_in, expected_out, actual_out))
@@ -1219,6 +1278,7 @@ def render_leaderboard_view(unit_name="All Units"):
                     <h4>{r1['Student Name']}</h4>
                     <p style="color:#f0f6fc; font-weight:bold; font-size:1.2rem;">⭐ {r1['Total Points']} Points</p>
                     <small>Solved: {r1['Questions Solved']} Problems</small>
+                    <small>Submitted: {_format_mcq_submission_time(r1['Completion Time'])}</small>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -1235,6 +1295,7 @@ def render_leaderboard_view(unit_name="All Units"):
                     <h4>{r2['Student Name']}</h4>
                     <p style="color:#f0f6fc; font-weight:bold; font-size:1.2rem;">⭐ {r2['Total Points']} Points</p>
                     <small>Solved: {r2['Questions Solved']} Problems</small>
+                    <small>Submitted: {_format_mcq_submission_time(r2['Completion Time'])}</small>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -1251,6 +1312,7 @@ def render_leaderboard_view(unit_name="All Units"):
                     <h4>{r3['Student Name']}</h4>
                     <p style="color:#f0f6fc; font-weight:bold; font-size:1.2rem;">⭐ {r3['Total Points']} Points</p>
                     <small>Solved: {r3['Questions Solved']} Problems</small>
+                    <small>Submitted: {_format_mcq_submission_time(r3['Completion Time'])}</small>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -1997,6 +2059,7 @@ else:
                         st.error("Answer choices must be unique.")
                     else:
                         st.session_state.quiz_questions.append({
+                            "mcq_id": uuid.uuid4().hex,
                             "unit": mcq_unit,
                             "question": mcq_question.strip(),
                             "description": mcq_description.strip(),
@@ -2264,15 +2327,15 @@ else:
                     for title in unit_titles
                     if student_scores.get(title, {}).get("status") == "Passed"
                 )
-                if unit_passed:
-                    record_label = f"{unit_passed} solved · {unit_marks} marks"
-                else:
-                    record_label = "NO RECORD"
                 unit_quiz_questions = [
                     quiz_question
                     for quiz_question in st.session_state.quiz_questions
                     if _quiz_question_unit(quiz_question) == unit_name
                 ]
+                if unit_passed or unit_titles or unit_quiz_questions:
+                    record_label = f"{unit_passed} solved · {unit_marks} marks"
+                else:
+                    record_label = "NO RECORD"
                 if unit_quiz_questions:
                     detail_label = f"Assessment: {len(unit_titles)} questions · MCQ: {len(unit_quiz_questions)} questions"
                 elif unit_passed:
@@ -2328,6 +2391,12 @@ else:
             st.title("🎮 MCQ Assignment")
             st.caption("Answer the published MCQ assessment questions for this unit.")
 
+            if st.button("🔄 Refresh MCQ Questions"):
+                st.rerun()
+            latest_mcq_data = load_db()
+            st.session_state.quiz_questions = _list_or_default(
+                latest_mcq_data.get("quiz_questions"), QUIZ_QUESTIONS.copy()
+            )
             unit_name = st.session_state.get("selected_student_unit", "Unit 1")
             unit_quiz_questions = [
                 quiz_question
@@ -2344,24 +2413,24 @@ else:
                 if attempt.get("unit", "Unit 1") == unit_name
             ]
             latest_attempts = {
-                attempt.get("question", ""): attempt
+                attempt.get("mcq_id", ""): attempt
                 for attempt in student_attempts
-                if attempt.get("question", "") in {
-                    question.get("question", "") for question in unit_quiz_questions
+                if attempt.get("mcq_id") in {
+                    question.get("mcq_id") for question in unit_quiz_questions
                 }
             }
             unanswered_questions = [
                 question
                 for question in unit_quiz_questions
-                if question.get("question", "") not in latest_attempts
+                if question.get("mcq_id") not in latest_attempts
             ]
             answered_count = len(latest_attempts)
-            question_by_text = {
-                question.get("question", ""): question for question in unit_quiz_questions
+            question_by_id = {
+                question.get("mcq_id"): question for question in unit_quiz_questions
             }
             current_score = sum(
-                int(question_by_text[question_text].get("points", 0))
-                for question_text, attempt in latest_attempts.items()
+                int(question_by_id[question_id].get("points", 0))
+                for question_id, attempt in latest_attempts.items()
                 if attempt.get("correct")
             )
             st.session_state.quiz_score = current_score
@@ -2399,6 +2468,7 @@ else:
                 with col_btn1:
                     if st.button("🚀 Lock Answer", type="primary"):
                         quiz_attempt = {
+                            "mcq_id": q_curr["mcq_id"],
                             "question": q_curr["question"],
                             "selected_answer": user_choice,
                             "correct_answer": q_curr["answer"],
@@ -2541,9 +2611,10 @@ else:
 
             with col2:
                 st.subheader("Your Solution")
+                saved_submission = user_submissions.get(selected_title, {})
                 code_input = st.text_area(
                     "Write your Python code below:",
-                    value=q_data["starter_code"],
+                    value=saved_submission.get("code", q_data["starter_code"]),
                     height=280,
                 )
                 assessment_download(selected_title, q_data["description"], code_input, f"{selected_title}.html")
@@ -2568,12 +2639,14 @@ else:
                         st.session_state.student_scores[current_username][selected_title] = {
                             "status": "Passed",
                             "score": q_data.get("points", 10),
+                            "code": code_input,
                             "completed_at": datetime.now(timezone.utc).isoformat(),
                         }
                     else:
                         st.session_state.student_scores[current_username][selected_title] = {
                             "status": "Failed",
                             "score": 0,
+                            "code": code_input,
                         }
 
                     sync_to_disk()
